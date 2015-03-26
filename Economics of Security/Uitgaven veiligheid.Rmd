@@ -25,4 +25,8 @@ Uit onderzoek naar doelwitselectie van inbrekers [@vandeviver_rol_2012;@vandeviv
 VERDER LEZEN [@kelejian_suggested_1993] spatiaal model van lokale uitgaven (County)
 VERDER LEZEN, ARTIKEL NIET BENADERBAAR HOEWEL IN UGENT CATALOOG [@schwab_disentangling_1987] schat kost- en productiefuncties voor uitgaven aan politie. Waarschuwt voor het ontbreken van bevolkingsvariabelen in schattingen, wegens mogelijk sterk vertekende resultaten.
 
+# Inleidng en probleemstelling
+
+Met de politiehervorming wijzigde ook de financiering van de lokale politie voor de gemeenten. Vanaf 2002 ging een systeem van overdrachten naar de zone in voege, vergelijkbaar met de financiering van bijvoorbeeld de OCMW's.^[Misschien wat concreter uitdiepen voor de leek?] Opvallend is dat de dotaties aan de zones gemiddeld ieder jaar stegen, maar dat die trend in 2013 werd onderbroken. Men zou dit kunnen wijten aan de crisis of aan de besparingszucht van ijverige politici, maar we hopen met deze bijdrage de oorzaken van deze daling te achterhalen en de uitgaven aan de lokale politie door de gemeenten in kaart te brengen. Meerbepaald proberen we te achterhalen of het budgettair beleid zich afstemt op de veiligheidsnoden van de gemeente. Men mag immers verwachten dat een stijging van de criminaliteitscijfers door de beleidsmakkers een trigger kan vormen om meer uit te geven aan haar politie.
+
 # Bibliografie
