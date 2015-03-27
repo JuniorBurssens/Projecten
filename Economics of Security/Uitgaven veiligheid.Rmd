@@ -12,9 +12,7 @@ Volgens Becker [@becker_crime_1968] zou een verschil in uitgaven voor criminalit
 
 Worral [@worrall_effects_2008] onderzocht het effect dat LLEBG (Local Law Enforcement Block Grants) subsidies in de VS hadden op de reductie van ernstige criminaliteit en stelde vast dat de extra financiering leidde tot een significante reductie. De daling werd echter niet veroorzaakt door de extra politiecapaciteit, maar door een ander, niet geïdentificeerd, mechanisme.
 
-In de VS werd het effect van de uitgaven voor politie op crinminaliteit onderzocht door Levitt [@levitt_using_1997]. Hij gebruikt het feit dat de uitgaven voor politie stijgen in een lokaal verkiezingsjaar als instrumentvariabele voor de werkelijke uitbreiding van de politie. Het endogeniteitsprobleem, waarbij het criminaliteitsniveau en de politiecapaciteit gezamenlijk bepaald worden door bijvoorbeeld een grootstedelijke context. Hij bevestigt de hypothese dat een stijging in de politiecapaciteit criminaliteit reduceert, zij het in verschillende mate naargelang het type criminaliteit.
-
-Deller et al. [@deller_model_2006] vinden bewijs voor verschillen in de onderlinge verhoudingen van uitgaven wanneer het totale budget daalt of stijgt, ten gevolge van een wijziging van de federale subsidies. Bij een daling wordt er minder snel bespaard op politie of brandweer.
+In de VS werd het effect van de uitgaven voor politie op criminaliteit onderzocht door Levitt [@levitt_using_1997]. Hij gebruikt het feit dat de uitgaven voor politie stijgen in een lokaal verkiezingsjaar als instrumentvariabele voor de werkelijke uitbreiding van de politie. Hij lost hiermee het endogeniteitsprobleem op, waarbij het criminaliteitsniveau en de politiecapaciteit gezamenlijk bepaald worden door bijvoorbeeld een grootstedelijke context. Hij bevestigt de hypothese dat een stijging in de politiecapaciteit criminaliteit reduceert, zij het in verschillende mate naargelang het type criminaliteit.
 
 Vanuit bestuurlijk oogpunt is het optimale niveau van uitgaven voor politie moeilijk te bepalen. Correa [@correa_optimal_2005] tracht dit op te vangen door het begrip schade te gebruiken. Schade omvat daarbij de totale kost veroorzaakt door criminaliteit en politiebescherming. Wanneer men deze kost weet te minimaliseren, zal het optimum bereikt worden.
 
@@ -25,8 +23,19 @@ Uit onderzoek naar doelwitselectie van inbrekers [@vandeviver_rol_2012;@vandeviv
 VERDER LEZEN [@kelejian_suggested_1993] spatiaal model van lokale uitgaven (County)
 VERDER LEZEN, ARTIKEL NIET BENADERBAAR HOEWEL IN UGENT CATALOOG [@schwab_disentangling_1987] schat kost- en productiefuncties voor uitgaven aan politie. Waarschuwt voor het ontbreken van bevolkingsvariabelen in schattingen, wegens mogelijk sterk vertekende resultaten.
 
-# Inleidng en probleemstelling
+# Inleiding en probleemstelling
 
-Met de politiehervorming wijzigde ook de financiering van de lokale politie voor de gemeenten. Vanaf 2002 ging een systeem van overdrachten naar de zone in voege, vergelijkbaar met de financiering van bijvoorbeeld de OCMW's.^[Misschien wat concreter uitdiepen voor de leek?] Opvallend is dat de dotaties aan de zones gemiddeld ieder jaar stegen, maar dat die trend in 2013 werd onderbroken. Men zou dit kunnen wijten aan de crisis of aan de besparingszucht van ijverige politici, maar we hopen met deze bijdrage de oorzaken van deze daling te achterhalen en de uitgaven aan de lokale politie door de gemeenten in kaart te brengen. Meerbepaald proberen we te achterhalen of het budgettair beleid zich afstemt op de veiligheidsnoden van de gemeente. Men mag immers verwachten dat een stijging van de criminaliteitscijfers door de beleidsmakkers een trigger kan vormen om meer uit te geven aan haar politie.
+Met de politiehervorming wijzigde ook de financiering van de lokale politie voor de gemeenten. Vanaf 2002 ging een systeem van overdrachten naar de zone in voege, vergelijkbaar met de financiering van bijvoorbeeld de OCMW's.^[Misschien wat concreter uitdiepen voor de leek?] Opvallend is dat de gemiddelde dotatie aan de zones ieder jaar steeg, maar dat die trend in 2013 werd onderbroken. Men zou dit gemakshalve kunnen wijten aan de crisis of aan de besparingszucht van ijverige politici, maar we hopen met deze bijdrage de oorzaken van deze daling te achterhalen en de uitgaven aan de lokale politie door de gemeenten in kaart te brengen. Meerbepaald proberen we te achterhalen of het budgettair beleid zich afstemt op de veiligheidsnoden van de gemeente. Men mag immers verwachten dat een stijging van de criminaliteitscijfers voor de beleidsmakkers een trigger kan vormen om meer te investeren in haar politie. Dit zou gereflecteerd moeten worden in de uitgaven voor politie, maar ook in het aandeel dat de politie-uitgaven krijgen in de totale uitgaven van de gemeente.
+
+Paragraaf maatschappelijke relevantie: parlementaire vragen, politievakbond, meergemeentezones, korpschef.
+
+Paragraaf context gemeente-uitgaven.
+
+# Literatuur
+
+Paragraaf wat bepaalt uitgaven voor politie?veiligheid?
+Paragraaf hoe verhouden politie-uitgaven zich tot de andere uitgaven?s
+Deller et al. [@deller_model_2006] vinden bewijs voor verschillen in de onderlinge verhoudingen van uitgaven wanneer het totale budget daalt of stijgt, ten gevolge van een wijziging van de federale subsidies. Bij een daling wordt er minder snel bespaard op politie of brandweer.
+
 
 # Bibliografie
