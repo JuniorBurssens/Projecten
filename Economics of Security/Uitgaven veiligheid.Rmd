@@ -6,6 +6,7 @@ output: word_document
 csl: apa.csl
 bibliography: Economics of Security.bib
 ---
+
 # Selectie teksten
 
 Volgens Becker [@becker_crime_1968] zou een verschil in uitgaven voor criminaliteitsbeheersing moeten leiden tot een verschil in criminaliteitsniveau. Extra politie verhoogt immers de pakkans bij eenzelfde bestraffingsniveau. Anderzijds illustreert Van Reenen [@vanreenen_unpayable_1999] de toepasbaarheid van Baumol's *cost disease* op politie: uitgaven zijn vooral gebonden aan personeelskosten en kunnen blijven stijgen zonder een daadwerkelijk verschil te maken in het beoogde resultaat. Daarbovenop is er een normatief effect aan het werk en speelt het monopolie van de politie een belangrijke rol.
@@ -37,5 +38,54 @@ Paragraaf wat bepaalt uitgaven voor politie?veiligheid?
 Paragraaf hoe verhouden politie-uitgaven zich tot de andere uitgaven?s
 Deller et al. [@deller_model_2006] vinden bewijs voor verschillen in de onderlinge verhoudingen van uitgaven wanneer het totale budget daalt of stijgt, ten gevolge van een wijziging van de federale subsidies. Bij een daling wordt er minder snel bespaard op politie of brandweer.
 
+# Methodologie
+
+## Model
+
+WERKINGSUITGPERCAPITA2013 = c + NBICAP10 + unempl11 + DSALDOCAP1112 + min20j13 + plus64j13 + voetbal + grensnl + grensfr + taalgr + DCENTRG + DAGGLOMG + DECONACTG + DTOERISTG + DWOONG + AGEMPERZONE + EIGM2010
+
+
+## Variabelen
+
+### Socio-economische variabelen
+
+NBICAP10
+:    Netto belastbaar inkomen per capita voor 2010
+unempl11
+:    Werkloosheidsgraad (werklozen/actieve bevolking) in 2011
+DSALDOCAP1112  
+:    Verandering in het saldo (overschot of tekort) van de gemeente-uitgaven van 2011 naar 2012
+min20j13
+:    Het aantal -20-jarigen in 2013
+plus64j13
+:    Het aantal +^$ jarigen in 2014
+voetbal
+:    De gemeente heeft een ploeg in het eersteklassevoetbal
+
+### Geografische kenmerken
+
+grensnl
+:    De gemeente grenst aan Nederland
+grensfr
+:    De gemeente grenst aan Frankrijk
+taalgr
+:    De gemeente ligt aan de taalgrens
+DCENTRG
+:    De gemeente is een centrumgemeente
+DAGGLOMG
+:    De gemeente is een agglomeratiegemeente (volgens de Belfius indeling)
+DECONACTG
+:    ?
+DTOERISTG
+:    De gemeente is een toeristisch aantrekkelijke gemeente
+DWOONG
+:    De gemeente is een woongemeente
+AGEMPERZONE
+:    Het aantal gemeenten in de politiezone
+
+### Criminaliteitsvariabelen
+
+EIGM2010
+:    De eigendomscriminaliteit in 2010 voor de gemeente
 
 # Bibliografie
