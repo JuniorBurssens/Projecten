@@ -1,0 +1,77 @@
+Option Explicit
+
+Sub rapport()
+
+Dim Aantal As Long
+Dim Ontbrekend As Long
+'Dim Cell As Range
+Dim GemVr1 As Double
+Dim Grafiekdata As Range
+
+ActiveSheet.Range("A1", "MP1").AutoFilter Field:=334, Criteria1:="1" 'filter rijen met gegevens voor makelaarsblok
+ActiveSheet.AutoFilter.Range.SpecialCells(xlCellTypeVisible).Copy 'kopieer de gegevens
+Sheets.Add After:=Sheets(1)
+ActiveWorkbook.Sheets(2).Select 'Activeer het tweede rekenblad voor plakken
+Range("A1").PasteSpecial 'plak de gegevens
+Aantal = Range("LV2", Range("LV1").End(xlDown)).Rows.Count 'Aantal observaties
+'Vraag 1 berekenen
+    Ontbrekend = WorksheetFunction.CountIf(Range("LW2", Range("LW1").Offset(Aantal)), -99) 'Aantal missings
+    'For Each Cell In Range("LW2", Range("LW1").Offset(Aantal - 1))
+    '    ActiveCell.Value = ActiveCell.Replace(-99, "")
+    'Next Cell
+    GemVr1 = WorksheetFunction.AverageIf(Range("LW2", Range("LW1").Offset(Aantal)), ">0") 'Voorwaardelijk gemiddelde, zodat de missings met waarde -99 uitgesloten worden)
+'Vraag 2 berekenen
+    Range("LX1").Offset(Aantal + 1) = WorksheetFunction.CountIf(Range("LX2", Range("LX1").Offset(Aantal - 1)), "Ja") 'aantal ja
+    Range("LX1").Offset(Aantal + 2) = WorksheetFunction.CountIf(Range("LX2", Range("LX1").Offset(Aantal - 1)), "Neen") 'aantal Neen
+    Range("LX1").Offset(Aantal + 3) = WorksheetFunction.CountIf(Range("LX2", Range("LX1").Offset(Aantal - 1)), -99) 'aantal missing
+    Range("LX1").Offset(Aantal + 1, -1) = "Ja"
+    Range("LX1").Offset(Aantal + 2, -1) = "Neen"
+    Range("LX1").Offset(Aantal + 3, -1) = "Ontbrekend"
+    Set Grafiekdata = ActiveWorkbook.Worksheets(2).Range(Range("LX1").Offset(Aantal + 1), Range("LX1").Offset(Aantal + 3, -1))
+    Charts.Add 'voeg taartgrafiek toe
+    With ActiveChart
+        .Name = "taartgrafiek"
+        .ChartType = xlPie
+        .SetSourceData Source:=Grafiekdata, PlotBy:=xlColumns
+        .ApplyDataLabels (xlDataLabelsShowPercent)
+        .ChartStyle = 26
+        .CopyPicture 'kopieer de taartgrafiek
+    End With
+    'plak de grafiek
+
+
+'Vraag 1 resultaten
+    Select Case GemVr1 'De juiste afbeelding selecteren
+        Case Is > 4.5
+            'Afbeelding zeer tevreden
+        Case 3.5 To 4.5
+            'Afbeelding tevreden
+        Case 2.5 To 3.5
+            'Afbeelding neutraal
+        Case 1.5 To 2.5
+            'Afbeelding niet tevreden
+        Case 0 To 1.5
+            'Afbeelding ontevreden
+    End Select
+'Vraag 2 resultaten
+
+
+
+'Dim Einde As Long
+'Dim Resp As Range
+'Dim CntResp As Long
+'
+'CntResp = 0
+'Einde = Range("A1").End(xlDown).Row 'Weten wat de laatste rij is in het bestand
+'For Each Resp In Range("LV3", Cells(Einde, 334)) 'Alle cellen doorlopen van de start makelaarsblok
+'    If Resp.Value = 1 Then 'schrijf de niet lege cellen weg
+'        CntResp = CntResp + 1
+'        Range(Resp, Resp.Offset(0, 20)).Copy
+'        Sheets(2).Activate
+'        Sheets(2).Range(Cells(CntResp, 1)).PasteSpecial
+'        Sheets(1).Activate
+'    End If
+'
+'Next Resp
+
+End Sub
