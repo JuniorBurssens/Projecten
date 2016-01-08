@@ -1,0 +1,227 @@
+Option Explicit
+
+'Sub VermijdHandkramp()
+''Deze macro zoekt dubbele vermeldingen via voorwaardelijke opmaak (nadien enkel nog te identificeren via een filter, dus in het vervolg te vermijden) en controleert ook of een naam voorkomt in een andere tekst (bedrijfsnaam). Vervolgens worden alle lege rijen opgevuld en worden de aangeduide cellen gekopieerd naar verschillende tabbladen.
+''Gemaakt voor collega Elke Vandorpe voor het selecteren uit Belfin-data
+'Dim Lijst As Range
+'Dim i As Long
+'Dim Cell As Range
+'Dim Aantal As Long
+'Dim Datablad As String
+'Dim Familienaam As Range
+'Dim Bedrijfsnaam As Range
+'Dim Counter As Long
+'Dim Volgende As Long
+'Dim Kleur As Boolean
+'Dim Einde As Range
+'Dim j As Long
+'Dim Eerste As String
+'Dim Laatste As String
+'
+'On Error GoTo Foutje
+'Cells.FormatConditions.Delete
+'If MsgBox("Dag Elke, staat de eerste familienaam geselecteerd?", vbYesNo) = vbYes Then
+'    Aantal = Application.InputBox("Geef het rijnummer van de laatste rij, zodat de macro weet waar hij mag eindigen:", Type:=1)
+'    Application.ScreenUpdating = False
+'    Datablad = ActiveSheet.Name
+'    Sheets.Add(After:=ActiveSheet).Name = "Bedrijfsnaam"
+'    Set Lijst = Application.Worksheets("Bedrijfsnaam").Range("A1")
+'    Application.Worksheets(Datablad).Activate
+'    Volgende = 0
+'    For i = 1 To Aantal
+'        Set Familienaam = ActiveCell
+'        Counter = 0
+'        If Not Familienaam = "" Then
+'            If Not Familienaam.Offset(0, -6) = "" Then
+'                Set Bedrijfsnaam = ActiveCell.Offset(0, -6)
+'                If Bedrijfsnaam.Offset(1, 0) = "" Then
+'                    Counter = Range(Bedrijfsnaam, Bedrijfsnaam.End(xlDown)).Count - 2
+'                    With Range(Familienaam, Familienaam.Offset(Counter, 0))
+'                        .FormatConditions.Delete
+'                        .FormatConditions.AddUniqueValues
+'                        .FormatConditions(1).DupeUnique = xlDuplicate
+'                        .FormatConditions(1).Interior.ColorIndex = 6
+'                    End With
+'                End If
+'                If InStr(1, Bedrijfsnaam.Value, Familienaam.Value, vbTextCompare) > 0 Then
+'                    Bedrijfsnaam.Interior.Color = vbBlue
+'                    Range(Bedrijfsnaam, Bedrijfsnaam.Offset(0, 4)).Copy
+'                    Lijst.Offset(Volgende, 0).PasteSpecial
+'                    Volgende = Volgende + 1
+'                End If
+'            Else
+'                If InStr(1, Bedrijfsnaam.Value, Familienaam.Value, vbTextCompare) > 0 Then
+'                    Bedrijfsnaam.Interior.Color = vbBlue
+'                    Range(Bedrijfsnaam, Bedrijfsnaam.Offset(0, 4)).Copy
+'                    Lijst.Offset(Volgende, 0).PasteSpecial
+'                    Volgende = Volgende + 1
+'                End If
+'            End If
+'        End If
+'        Familienaam.Offset(1, 0).Activate
+'    Next i
+'    Range("A1").Activate
+'    For j = 1 To Aantal
+'        If ActiveCell.Value <> "" Then
+'            Eerste = ActiveCell.Address
+'            Laatste = ActiveCell.Offset(0, 5).Address
+'            Range(Eerste, Laatste).Copy
+'        Else
+'            ActiveCell.PasteSpecial
+'        End If
+'        ActiveCell.Offset(1, 0).Select
+'    Next j
+'    With ActiveSheet.Range("$A$1", "$N$1")
+'        .AutoFilter Field:=8, Criteria1:=RGB(255, 255, 0), Operator:=xlFilterCellColor
+'    End With
+'    ActiveSheet.Cells.SpecialCells(xlCellTypeVisible).Copy
+'    Sheets.Add(After:=ActiveSheet).Name = "Bestuurders"
+'    Worksheets("Bestuurders").Range("A1").PasteSpecial
+'    Set Einde = ActiveCell.SpecialCells(xlLastCell)
+'    ActiveSheet.Range("A1", Einde).RemoveDuplicates Columns:=3, Header:=xlNo
+'    Worksheets("Bedrijfsnaam").Activate
+'    Set Einde = ActiveCell.SpecialCells(xlLastCell)
+'    ActiveSheet.Range("A1", Einde).RemoveDuplicates Columns:=2, Header:=xlNo
+'    Worksheets(Datablad).Activate
+'    ActiveSheet.Range("$A$1", "$N$1").AutoFilter
+'    Application.ScreenUpdating = True
+'    MsgBox ("De macro is uitgevoerd. Drink nu van het water uit de bron der kennis!")
+'End If
+'
+'Exit Sub
+'
+'Foutje:
+'MsgBox "Oeps! Er is blijkbaar iets foutgelopen. Telegrafeer ...---... naar Junior of herhaal deze handeling nooit meer.", vbCritical
+'
+'End Sub
+
+Sub Aggregeren()
+'Deze macro cut en paste rijen met dezelfde ID naast elkaar en verwijdert de lege rijen,waardoor het hogere aggregatieniveau kan onderzocht worden (bvb. ingeval meerdere eenheden per bedrijf/gezin/...). Samnevoegen kan dan volgens eigen voorkeur.
+Dim ID As String 'dit is de ID
+Dim counter As Integer 'dit is het aantal keren dezelfde ID
+Dim Naast As Integer 'dit is het einde van de data voor de rij waarop geplakt wordt en is variabel door het variabel aantal eenheden
+Dim Aantal As Long
+Dim i As Long
+
+On Error GoTo Fout
+
+Application.ScreenUpdating = False
+Worksheets(1).Activate
+Worksheets(1).Range("A1", Range("A1").SpecialCells(xlCellTypeLastCell)).Copy 'verwijderen van de formules wegens knippen en plakken verderop
+Range("A1").PasteSpecial (xlPasteValues)
+Range("A2").Activate
+Aantal = Range(ActiveCell, ActiveCell.End(xlDown)).Count 'geeft het totaal aantal rijen
+
+For i = 1 To Aantal 'loop het totaal aantal rijen
+
+    If ActiveCell.Value <> ID Then 'dit is een nieuwe ID
+        ID = ActiveCell.Value 'Waarde van de nieuwe ID
+        Selection.Name = "Bovenaan" 'Plaats van de nieuwe ID
+        counter = 0 'Nieuwe ID, dus waarde 0
+        'MsgBox (Linknr)
+    Else:
+        counter = counter + 1 'Zelfde ID als de vorige rij, dus tellen hoeveel dezelfde
+        'MsgBox (Counter)
+    End If
+
+    If counter = 0 Then 'dit is bij een nieuwe ID
+        ActiveCell.Offset(1, 0).Select 'volgende ID kiezen
+    Else
+        Naast = counter * 27 'kolom bepalen waar de rij naast geplakt zal worden
+'        ActiveCell.Range("A1:AA1").Copy
+'        ActiveCell.Range("A1:AA1").PasteSpecial (xlPasteValues) 'tussenstap om formules te verwijderen, want je kan geen waarden plakken na knippen
+        ActiveCell.Range("A1:AA1").Cut 'data van de rij knippen
+        Range("Bovenaan").Select 'cel met eerste ID selecteren
+        ActiveCell.Offset(0, Naast).Select 'lege cel op het einde van de rij waar geplakt wordt selecteren
+        ActiveSheet.Paste
+        Range("Bovenaan").Select 'cel met eerste ID selecteren
+        ActiveCell.End(xlDown).Select
+    End If
+
+Next i
+Application.ScreenUpdating = True
+
+Worksheets(1).Cells.SpecialCells(xlCellTypeVisible).Select 'kopieer de waarden
+Worksheets(1).Range("A1", Range("A1").SpecialCells(xlCellTypeLastCell)).AutoFilter Field:=1, Criteria1:="<>" 'Filter de lege cellen eruit
+Worksheets(1).Cells.SpecialCells(xlCellTypeVisible).Copy 'kopieer de waarden
+Sheets.Add(After:=ActiveSheet).Name = "Aggregatie" 'Maak een blad voor de waarden
+Worksheets("Aggregatie").Range("A1").PasteSpecial (xlPasteValues) 'Plak de waarden
+Worksheets(1).Range("A1").AutoFilter 'Verwijder autofilter
+
+Exit Sub
+Fout:
+MsgBox "Oeps! Er is blijkbaar iets foutgelopen. Sluit het bestand af zonder opslaan en roep hulp in.", vbCritical
+
+End Sub
+
+Sub telnace()
+'telt het aantal ondernemingen per nacecode
+Dim Nace As Range
+Dim Aantal As Double
+Dim Rij As Double
+
+Application.ScreenUpdating = False
+Columns("A:U").Sort key1:=Columns(9), order1:=xlAscending, Header:=xlYes 'oplopend sorteren op nace 2
+Rij = 0
+For Each Nace In Range("I2", Range("I2").End(xlDown))
+        If Nace <> Nace.Offset(1, 0) Then
+            ActiveSheet.Range("$A$1:$U$1").AutoFilter Field:=9, Criteria1:=Nace
+            Aantal = ActiveSheet.AutoFilter.Range.Columns(7).SpecialCells(xlCellTypeVisible).Count - 1
+            ActiveSheet.Range("$A$1:$CI$1").AutoFilter
+            Range("W2").Offset(Rij, 0) = Nace
+            Range("X2").Offset(Rij, 0) = Aantal
+            Rij = Rij + 1
+        End If
+Next Nace
+Application.ScreenUpdating = True
+MsgBox "Afgelopen!"
+End Sub
+Sub statsectdummy()
+
+Dim ObjID As Range
+Dim Kolom As Double
+
+For Each ObjID In Range("A18122", Range("A18122").End(xlDown))
+    If ObjID.Offset(0, 1) <> ObjID.Offset(-1, 1) Then
+        Range("A1").End(xlToRight).Offset(0, 1) = "S" & ObjID.Offset(0, 1).Value
+        Kolom = Range("A1", Range("A1").End(xlToRight)).Find("S" & ObjID.Offset(0, 1).Value).Column - 1
+        ObjID.Offset(0, Kolom).Value = 1
+    Else
+        Kolom = Range("A1", Range("A1").End(xlToRight)).Find("S" & ObjID.Offset(0, 1).Value).Column - 1
+        ObjID.Offset(0, Kolom) = 1
+    End If
+    
+    
+Next ObjID
+
+End Sub
+
+Sub nullen()
+Dim Cell As Range
+Dim i As Double
+Dim counter As Double
+'Application.ScreenUpdating = False
+    Do While ActiveCell.Row < 39386
+        For i = 1 To 5176
+            If IsEmpty(ActiveCell) Then
+            ActiveCell.Value = 0
+            Else
+            End If
+            ActiveCell.Offset(0, 1).Activate
+        Next i
+        ActiveCell.Offset(1, -5176).Activate
+        counter = counter + 1
+        If counter = 50 Then
+            ActiveWorkbook.Save
+            counter = 0
+        End If
+    Loop
+    
+'    For Each cell In Selection
+'    If IsEmpty(cell) Then
+'    cell.Value = 0
+'    End If
+'    Next
+'Application.ScreenUpdating = True
+End Sub
+
