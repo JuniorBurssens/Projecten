@@ -1,0 +1,65 @@
+Option Explicit
+'Sub Identificatie()
+''Voor immoscraper. Om het ID uit de URL te halen
+'    Dim Cel As Range
+'    Dim EersteID As Long
+'    Dim TweedeID As Long
+'
+'    Range("CC1") = "ID"
+''    Range("CF1") = "ID2"
+'    For Each Cel In Range("BZ2", Range("BZ2").End(xlDown))
+'        EersteID = InStr(Cel.Value, "idbien=")
+''        TweedeID = InStr(Cel.Value, "idbienbgi=")
+'        Cel.Offset(0, 3) = Mid(Cel.Value, EersteID + 7, 7)
+''        If TweedeID <> 0 Then
+''        Cel.Offset(0, 3) = Mid(Cel.Value, TweedeID + 10, 7)
+''        End If
+'    Next Cel
+'
+'End Sub
+'Sub Politiezonesmatrix()
+'
+'    Sheets("Variabele").Select
+'    Range("B2").Select
+'    ActiveSheet.Paste
+'    Sheets("Buurvariabele horizontaal").Select
+'    Range("A2", Selection.End(xlToRight)).Select
+'    Selection.Copy
+'    Sheets("Buurvariabele verticaal").Select
+'    Range("C2").Select
+'    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+'        :=False, Transpose:=True
+'    Selection.Copy
+'End Sub
+
+'Sub BedrijfPerRij()
+''Deze macro cut en paste rijen met dezelfde ID naast elkaar,waardoor het hogere aggregatieniveau kan onderzocht worden (bvb. ingeval meerdere eenheden per bedrijf/gezin/...). Samnevoegen kan dan volgens eigen voorkeur.
+'Dim Linknr1 As Long 'dit is de ID
+'Dim Counter As Integer 'dit is het aantal keren dezelfde ID
+'Dim Naast As Integer 'dit is het einde van de data voor de rij waarop geplakt wordt en is variabel door het variabel aantal eenheden
+'
+'For i = 1 To 13258 'loop het totaal aantal rijen
+'    If ActiveCell.Value <> Linknr1 Then 'dit is een nieuwe ID
+'        Linknr1 = ActiveCell.Value 'Waarde van de nieuwe ID
+'        Selection.Name = "Bovenaan" 'Plaats van de nieuwe ID
+'        Counter = 0 'Nieuwe ID, dus waarde 0
+'        'MsgBox (Linknr)
+'    Else:
+'        Counter = Counter + 1 'Zelfde ID als de vorige rij, dus tellen hoeveel dezelfde
+'        'MsgBox (Counter)
+'    End If
+'
+'    If Counter = 0 Then 'dit is bij een nieuwe ID
+'        ActiveCell.Offset(1, 0).Select 'volgende ID kiezen
+'    Else
+'        Naast = Counter * 27 'kolom bepalen waar de rij naast geplakt zal worden
+'        ActiveCell.Range("A1:AA1").Cut 'data van de rij knippen
+'        Range("Bovenaan").Select 'cel met eerste ID selecteren
+'        ActiveCell.Offset(0, Naast).Select 'lege cel op het einde van de rij waar geplakt wordt selecteren
+'        ActiveSheet.Paste
+'        Range("Bovenaan").Select 'cel met eerste ID selecteren
+'        Selection.End(xlDown).Select 'naar volgende cel gaan door lege cellen over te slaan
+'    End If
+'Next i
+'End Sub
+
