@@ -1,0 +1,40 @@
+Option Explicit
+
+Sub Stacken()
+'
+' Eerst de gegevens transponeren
+'
+
+'
+    ActiveCell.Offset(0, 1).Select
+    Range(Selection, ActiveCell.SpecialCells(xlLastCell)).Select
+    Selection.Cut
+    ActiveCell.Offset(11, -1).Select
+    ActiveSheet.Paste
+End Sub
+Sub Namenstack()
+'
+' Selecteer de eerste te verplaatsen NISCode/stadsnaam
+'
+
+'
+
+    Range(Selection, Selection.End(xlDown)).Select
+    Selection.Cut
+    ActiveCell.Offset(10, 0).Select
+    ActiveSheet.Paste
+    ActiveCell.Offset(-11, 0).Select
+    Selection.AutoFill Destination:=Range(ActiveCell, ActiveCell.Offset(10, 0)), Type:=xlFillDefault
+    ActiveCell.Offset(12, 0).Select
+End Sub
+
+Sub Jaarplak()
+'
+' Macro5 Macro
+'
+
+'
+    Selection.Copy
+    ActiveCell.Offset(10, 0).Select
+    ActiveSheet.Paste
+End Sub
