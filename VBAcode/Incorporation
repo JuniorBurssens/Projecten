@@ -1,0 +1,1000 @@
+Option Explicit
+Dim Aantal As Long
+Dim Stad As String
+
+Sub vennvolledig()
+'Doet alle handelingen/macro's om het Belfin bestand volledig klaar te zetten voor analyse
+'Dim Nacebelsel  As Range
+'Dim Nacedubsel  As Range
+
+'Range("U1") = "nacebel groep"
+'Range("V1") = "omschrijving nacebel groep"
+Aantal = Application.InputBox("Hoeveel rijen?", Type:=1)
+'Stad = Application.InputBox("Welke stad?", Type:=2)
+'Range("B2").Select
+'Call dubbelsfin
+'Range("B2").Select
+'Call dubbels
+'Range("C2").Select
+'Range(Selection, Selection.End(xlDown)).Select
+'Call Voorloopnul
+'Call nacebel
+'Call analvrijberoep
+'Worksheets("Selectie").Select
+'Call xtraberekeningen
+'ActiveWindow.ActivateNext
+'MsgBox ("Berekeningen uitgevoerd")
+'Call nacetellen
+'MsgBox ("Telling uitgevoerd")
+''Range("U2").Select
+''Range(Selection, Selection.End(xlDown)).Select
+''Call nacedub
+'ActiveWorkbook.Save
+'ActiveWorkbook.Close
+'Beep
+End Sub
+
+Sub nacebel()
+'zoekt omschrijving van een bepaalde nacebel-code (hier wordt slechts een deel van de nacebelcode gebruikt, omdat we een hoger aggregatieniveau willen)
+'(gebruikt voor data uit belfin-cdr's vervennootschappelijking, project stedelijk fiscaal instrumentarium)
+
+Dim Cell As Range
+Dim Zoekcode As Range
+Dim nacebel As String
+Application.ScreenUpdating = False
+For Each Cell In Selection
+If Cell <> "" Then
+    nacebel = Mid(Cell.Value, 1, 3)
+    Cell.Offset(0, 13).Value = nacebel
+'        For Each Zoekcode In Workbooks("NACEBEL 2008.xls").Worksheets("NACEBEL").Range("B1:B1918")
+'            If nacebel = Zoekcode.Value Then
+'            Zoekcode.Offset(0, 1).Copy
+'            Exit For
+'            End If
+'        Next Zoekcode
+'    Cell.Offset(0, 14).PasteSpecial
+End If
+Next Cell
+Application.ScreenUpdating = True
+'MsgBox ("Nacebel verkorten gedaan!")
+End Sub
+
+Sub dubbels()
+'kopieert eerste 5 cellen van een rij in de lege rij eronder
+'(gebruikt voor data uit belfin-cdr's vervennootschappelijking, project stedelijk fiscaal instrumentarium)
+'Selecteer eerste cel met naam (dus aantal = 1) alvorens te beginnen en ga naar de laatste rij van de data
+Dim i As Long
+Dim LegeRij As Range
+
+Application.ScreenUpdating = False
+For i = 1 To Aantal - 1
+    If ActiveCell.Value <> "" Then
+    Else
+        Set LegeRij = ActiveSheet.Range(ActiveCell, ActiveCell.Offset(0, 5))
+        Range(ActiveCell.Offset(-1, 0), ActiveCell.Offset(-1, 5)).Copy
+        LegeRij.PasteSpecial
+    End If
+    ActiveCell.Offset(1, 0).Select
+Next i
+Application.ScreenUpdating = True
+'MsgBox ("Tweede dubbels aanmaken gedaan!")
+End Sub
+Sub dubbelsfin()
+'doet hetzelfde als "sub dubbels", maar voor de volgende cellen (anders zou de data die al in de kolommen ertussen stond overschreven worden)
+'(gebruikt voor data uit belfin-cdr's vervennootschappelijking, project stedelijk fiscaal instrumentarium)
+'Selecteer eerste cel met naam (dus aantal = 1) alvorens te beginnen en ga naar de laatste rij van de data
+Dim i As Long
+Dim LegeRij As Range
+
+Application.ScreenUpdating = False
+For i = 1 To Aantal - 1 'aantal -1 wegens aftrekken kolomhoofding
+    If ActiveCell.Value <> "" Then
+    Else
+        Set LegeRij = ActiveSheet.Range(ActiveCell.Offset(0, 8), ActiveCell.Offset(0, 18))
+        Range(ActiveCell.Offset(-1, 8), ActiveCell.Offset(-1, 18)).Copy
+        LegeRij.PasteSpecial
+        ActiveCell.Offset(0, -8).Select
+    End If
+    ActiveCell.Offset(1, 0).Select
+Next i
+Application.ScreenUpdating = True
+'MsgBox ("Eerste dubbels aanmaken gedaan!")
+End Sub
+
+'Sub nacedub()
+''De dubbels in de nacebelcode na "sub nacebel" worden eruit gehaald (omdat we een slechts een deel van de oorspronkelijke nacebel code gebruikten om het aggregatieniveau te verhogen zijn er dubbele vermeldingen)
+''(gebruikt voor data uit belfin-cdr's vervennootschappelijking, project stedelijk fiscaal instrumentarium)
+''Selecteer de verkorte nacebel codes (3 cijfers) bekomen door het runnen van macro nacebel
+'Dim Cell As Range
+'Application.ScreenUpdating = False
+'For Each Cell In Selection
+'    If Cell.Value = Cell.Offset(-1, 0) Then
+'        If Cell.Offset(0, -18).Value = Cell.Offset(-1, -18).Value Then
+'        Cell.Offset(0, 1).Clear
+'        Cell.Value = 0
+'        End If
+'    End If
+'Next Cell
+'Application.ScreenUpdating = True
+'MsgBox ("Dubbels uit verkorte nacebel gehaald!")
+'End Sub
+'
+'Sub aanvullen()
+''Kopieert rechts van de huidige cellen een aantal cellen nieuwe data uit een ander excelblad op basis van ondernemingsnummer (voor 2011 was niet alle data in één keer geleverd)
+''(gebruikt voor data uit belfin-cdr's vervennootschappelijking, project stedelijk fiscaal instrumentarium)
+'Dim Cell As Range
+'Dim Brononderneming As Range
+'Dim Doelonderneming As Range
+'Dim Begin As Range
+'Dim Einde As Range
+'Set Brononderneming = Application.InputBox("Selecteer de broncellen met ondernemingsnummers (in het blad waar cellen naar worden gekopieerd)", Type:=8)
+'Set Doelonderneming = Application.InputBox("Selecteer de doelcellen met ondernemingsnummers (in het blad waar cellen van worden gekopieerd)", Type:=8)
+'Application.ScreenUpdating = False
+'For Each Cell In Brononderneming
+'If Cell.Value <> "" Then
+'    Set Begin = Doelonderneming.Find(Cell.Value, LookIn:=xlValues, Lookat:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False).Offset(0, 3)
+'    Set Einde = Begin.Offset(0, 4)
+'    Range(Begin, Einde).Copy
+'    Cell.Offset(0, 13).PasteSpecial
+'End If
+'Next Cell
+'Application.ScreenUpdating = True
+'MsgBox ("Gedaan!")
+'End Sub
+'
+'Sub nacebelomzetten()
+''Werkt gedeeltelijk wegens onvolledig lijst in de conversietabel
+'Dim i As Long
+'Dim Cell As Range
+'Dim Zoekcode As Range
+'Dim Begin As Range
+'Dim Einde As Range
+'Range("H2").Select
+'Aantal = Application.InputBox("Hoeveel rijen?", Type:=1)
+'Set Zoekcode = Workbooks("Conversietabel NACEBEL 2003 naar 2008.xlsx").Worksheets("NL").Range("A7:A1000")
+''De lijst in de conversietabel is onvolledig!
+'For i = 1 To Aantal - 1
+'    If ActiveCell <> "" Then
+'        On Error GoTo Kleuren
+'        Set Begin = Zoekcode.Find(ActiveCell.Value, LookIn:=xlValues, Lookat:=xlPart, SearchOrder:=xlByRows, matchbyte:=False).Offset(0, 2)
+'        Set Einde = Begin.Offset(0, 1)
+'            Range(Begin, Einde).Copy
+'            'For Each zoekcode In Workbooks("Conversietabel NACEBEL 2003 naar 2008.xlsx").Worksheets("NL").Range("A7:A806")
+'               ' If ActiveCell.Value = zoekcode.Value Then
+'               ' zoekcode.Offset(0, 2).Copy
+'            ActiveCell.PasteSpecial
+'                'zoekcode.Offset(0, 3).Copy
+'                'ActiveCell.Offset(0, 1).PasteSpecial
+'                'Exit For
+'                'End If
+'            'Next zoekcode
+'
+'
+'    End If
+'Volgende:
+'    ActiveCell.Offset(1, 0).Select
+'Next i
+'Exit Sub
+'Kleuren:
+'    ActiveCell.Interior.ColorIndex = 3
+'    Resume Volgende
+'End Sub
+'
+Sub analvrijberoep()
+'filtert de lijst en berekent de waarden
+Dim Rijen As Long
+Dim Einde As Range
+Dim Jaar As Long
+Dim Berekening As Workbook
+Dim Analyse As Workbook
+
+Dim NGrondslag As Long
+Dim OntbrGrondslag As Long
+Dim GnGrondslag As Long
+Dim GemGrondslag As Double
+Dim MedGrondslag As Double
+Dim SDGrondslag As Double
+Dim MinGrondslag As Double
+Dim MaxGrondslag As Double
+
+Dim NVenB As Long
+Dim OntbrVenB As Long
+Dim GnVenB As Long
+Dim GemVenB As Double
+Dim MedVenB As Double
+Dim SDVenB As Double
+Dim MinVenB As Double
+Dim MaxVenB As Double
+
+Dim xCell As Range
+Dim NPers As Long
+Dim OntbrPers As Long
+Dim GnPers As Long
+Dim GemPers As Double
+Dim MedPers As Double
+Dim SDPers As Double
+Dim MinPers As Double
+Dim MaxPers As Double
+
+'Filter en kopieer
+Set Berekening = Application.ActiveWorkbook
+Worksheets(1).Range("$A$1:$V$1").AutoFilter Field:=12, Criteria1:=">=0", Operator:=xlAnd
+'Nacebel 2008-codes
+'Worksheets(1).Range("$A$1:$V$1").AutoFilter Field:=8, Criteria1:=Array("66120", "66300", "66191", "66199", _
+'"69201", "69202", "69203", "68311", "68312", "81100", "71111", "71112", "71113", "71121", "71122", "69101", "69102", "69103", _
+'"69109", "47730", "86210", "86220", "86230", "86901", "86903", "86904", "86905", "86906", "86907", "86909", "75000", "70220", _
+'"74901", "66220", "66210", "66290", "62020", "58210", "58290", "62010", "62090", "62030", "63110", "73200", "70210", "70220", _
+'"73110", "78100", "74300", "82910", "74909", "77400", "82990", "63990", "90011", "90029", "90031", "47740"), Operator:=xlFilterValues
+''Nacebel 2003-codes
+'Worksheets(1).Range("$A$1:$V$1").AutoFilter Field:=8, Criteria1:=Array("52310", "52320", "67120", "67201", "67202", "67203", _
+'"70311", "70312", "70321", "72100", "72210", "7221", "72220", "7222", "72300", "72600", "74111", "74112", "74113", "74114", _
+'"74121", "74122", "74123", "74131", "74141", "74142", "74201", "74202", "74203", "74401", "74501", "74852", "74873", "74874", _
+'"74878", "74879", "85120", "85130", "85141", "85142", "85143", "85144", "85146", "85200", "92311", "92313"), Operator:=xlFilterValues
+'Worksheets("Preselectie").UsedRange.Clear 'wis de vorige inhoud
+'Worksheets("Selectie").UsedRange.Clear 'wis de vorige inhoud
+'Worksheets("Resultaten").Range("$A$1:$I$10").Clear 'wis de vorige inhoud
+Worksheets(1).Cells.SpecialCells(xlCellTypeVisible).Copy
+Sheets.Add(After:=ActiveSheet).Name = "Preselectie"
+Worksheets("Preselectie").Range("A1").PasteSpecial
+Sheets.Add(After:=ActiveSheet).Name = "Selectie"
+'dubbele verwijderen
+Worksheets("Selectie").Range("A1").PasteSpecial
+'Worksheets(1).Range("$A$1:$V$1").AutoFilter
+Worksheets("Selectie").Activate
+Worksheets("Selectie").Range("A1").Activate
+Set Einde = ActiveCell.SpecialCells(xlLastCell)
+Worksheets("Selectie").Range("A1", Einde).RemoveDuplicates Columns:=3, Header:=xlYes
+
+Rijen = Worksheets("Selectie").Range("C1").End(xlDown).Row
+
+BerekeningGrondslag:
+    'tekst omzetten naar cijfer
+Application.ScreenUpdating = False
+    For Each xCell In Worksheets("Selectie").Range(Cells(2, 18), Cells(Rijen, 18))
+            If Not xCell = "" Then
+            xCell = CDec(xCell)
+            End If
+    Next xCell
+Application.ScreenUpdating = True
+
+On Error GoTo GnSelGrondslag
+NGrondslag = Worksheets("Selectie").Range(Cells(2, 18), Cells(Rijen, 18)).SpecialCells(xlCellTypeConstants, xlNumbers).Count
+On Error GoTo GnMissGrondslag
+'OntbrGrondslag = Worksheets("Selectie").Range(Cells(2, 18), Cells(Rijen, 18)).SpecialCells(xlCellTypeBlanks).Count
+OntbrGrondslag = WorksheetFunction.CountIf(Worksheets("Selectie").Range(Cells(2, 18), Cells(Rijen, 18)), "")
+On Error GoTo 0
+GnGrondslag = WorksheetFunction.CountIf(Worksheets("Selectie").Range(Cells(2, 18), Cells(Rijen, 18)), "0")
+GemGrondslag = WorksheetFunction.Average(Worksheets("Selectie").Range(Cells(2, 18), Cells(Rijen, 18)))
+MedGrondslag = WorksheetFunction.Median(Worksheets("Selectie").Range(Cells(2, 18), Cells(Rijen, 18)))
+SDGrondslag = WorksheetFunction.StDev_S(Worksheets("Selectie").Range(Cells(2, 18), Cells(Rijen, 18)))
+MinGrondslag = WorksheetFunction.Min(Worksheets("Selectie").Range(Cells(2, 18), Cells(Rijen, 18)))
+MaxGrondslag = WorksheetFunction.Max(Worksheets("Selectie").Range(Cells(2, 18), Cells(Rijen, 18)))
+
+BerekeningVenB:
+    'tekst omzetten naar cijfer
+Application.ScreenUpdating = False
+    For Each xCell In Worksheets("Selectie").Range(Cells(2, 12), Cells(Rijen, 12))
+            If Not xCell = "" Then
+            xCell = CDec(xCell)
+            End If
+    Next xCell
+Application.ScreenUpdating = True
+
+On Error GoTo GnSelVenB
+NVenB = Worksheets("Selectie").Range(Cells(2, 12), Cells(Rijen, 12)).SpecialCells(xlCellTypeConstants, xlNumbers).Count
+On Error GoTo GnMissVenB
+'OntbrVenB = Worksheets("Selectie").Range(Cells(2, 12), Cells(Rijen, 12)).SpecialCells(xlCellTypeBlanks).Count
+OntbrVenB = WorksheetFunction.CountIf(Worksheets("Selectie").Range(Cells(2, 12), Cells(Rijen, 12)), "")
+On Error GoTo 0
+GnVenB = WorksheetFunction.CountIf(Worksheets("Selectie").Range(Cells(2, 12), Cells(Rijen, 12)), "0")
+GemVenB = WorksheetFunction.Average(Worksheets("Selectie").Range(Cells(2, 12), Cells(Rijen, 12)))
+MedVenB = WorksheetFunction.Median(Worksheets("Selectie").Range(Cells(2, 12), Cells(Rijen, 12)))
+SDVenB = WorksheetFunction.StDev_S(Worksheets("Selectie").Range(Cells(2, 12), Cells(Rijen, 12)))
+MinVenB = WorksheetFunction.Min(Worksheets("Selectie").Range(Cells(2, 12), Cells(Rijen, 12)))
+MaxVenB = WorksheetFunction.Max(Worksheets("Selectie").Range(Cells(2, 12), Cells(Rijen, 12)))
+
+
+BerekeningPers:
+    'tekst omzetten naar cijfer
+Application.ScreenUpdating = False
+    For Each xCell In Worksheets("Selectie").Range(Cells(2, 11), Cells(Rijen, 11))
+            If Not xCell = "" Then
+            xCell = CDec(xCell)
+            End If
+    Next xCell
+Application.ScreenUpdating = True
+On Error GoTo GnSelPers
+NPers = Worksheets("Selectie").Range(Cells(2, 11), Cells(Rijen, 11)).SpecialCells(xlCellTypeConstants, xlNumbers).Count
+On Error GoTo GnMissPers
+OntbrPers = WorksheetFunction.CountIf(Worksheets("Selectie").Range(Cells(2, 11), Cells(Rijen, 11)), "")
+On Error GoTo 0
+GnPers = WorksheetFunction.CountIf(Worksheets("Selectie").Range(Cells(2, 11), Cells(Rijen, 11)), "0")
+GemPers = WorksheetFunction.Average(Worksheets("Selectie").Range(Cells(2, 11), Cells(Rijen, 11)))
+MedPers = WorksheetFunction.Median(Worksheets("Selectie").Range(Cells(2, 11), Cells(Rijen, 11)))
+On Error Resume Next
+SDPers = WorksheetFunction.StDev_S(Worksheets("Selectie").Range(Cells(2, 11), Cells(Rijen, 11)))
+On Error GoTo 0
+MinPers = WorksheetFunction.Min(Worksheets("Selectie").Range(Cells(2, 11), Cells(Rijen, 11)))
+MaxPers = WorksheetFunction.Max(Worksheets("Selectie").Range(Cells(2, 11), Cells(Rijen, 11)))
+
+Afdrukken:
+Sheets.Add(After:=ActiveSheet).Name = "Resultaten"
+On Error Resume Next
+Worksheets("Resultaten").Range("B1").Value = "Grondslag"
+Worksheets("Resultaten").Range("A2").Value = "n"
+Worksheets("Resultaten").Range("B2").Value = NGrondslag
+Worksheets("Resultaten").Range("A3").Value = "Missing"
+Worksheets("Resultaten").Range("B3").Value = OntbrGrondslag
+Worksheets("Resultaten").Range("A4").Value = "Grondslag nul"
+Worksheets("Resultaten").Range("B4").Value = GnGrondslag
+Worksheets("Resultaten").Range("A5").Value = "Gemiddelde"
+Worksheets("Resultaten").Range("B5").Value = GemGrondslag
+Worksheets("Resultaten").Range("A6").Value = "Mediaan"
+Worksheets("Resultaten").Range("B6").Value = MedGrondslag
+Worksheets("Resultaten").Range("A7").Value = "Standaardafwijking"
+Worksheets("Resultaten").Range("B7").Value = SDGrondslag
+Worksheets("Resultaten").Range("A8").Value = "Minimum"
+Worksheets("Resultaten").Range("B8").Value = MinGrondslag
+Worksheets("Resultaten").Range("A9").Value = "Maximum"
+Worksheets("Resultaten").Range("B9").Value = MaxGrondslag
+
+Worksheets("Resultaten").Range("E1").Value = "Belasting"
+Worksheets("Resultaten").Range("D2").Value = "n"
+Worksheets("Resultaten").Range("E2").Value = NVenB
+Worksheets("Resultaten").Range("D3").Value = "Missing"
+Worksheets("Resultaten").Range("E3").Value = OntbrVenB
+Worksheets("Resultaten").Range("D4").Value = "Belasting nul"
+Worksheets("Resultaten").Range("E4").Value = GnVenB
+Worksheets("Resultaten").Range("D5").Value = "Gemiddelde"
+Worksheets("Resultaten").Range("E5").Value = GemVenB
+Worksheets("Resultaten").Range("D6").Value = "Mediaan"
+Worksheets("Resultaten").Range("E6").Value = MedVenB
+Worksheets("Resultaten").Range("D7").Value = "Standaardafwijking"
+Worksheets("Resultaten").Range("E7").Value = SDVenB
+Worksheets("Resultaten").Range("D8").Value = "Minimum"
+Worksheets("Resultaten").Range("E8").Value = MinVenB
+Worksheets("Resultaten").Range("D9").Value = "Maximum"
+Worksheets("Resultaten").Range("E9").Value = MaxVenB
+
+Worksheets("Resultaten").Range("H1").Value = "Personeel"
+Worksheets("Resultaten").Range("G2").Value = "n"
+Worksheets("Resultaten").Range("H2").Value = NPers
+Worksheets("Resultaten").Range("G3").Value = "Missing"
+Worksheets("Resultaten").Range("H3").Value = OntbrPers
+Worksheets("Resultaten").Range("G4").Value = "Geen personeel"
+Worksheets("Resultaten").Range("H4").Value = GnPers
+Worksheets("Resultaten").Range("G5").Value = "Gemiddelde"
+Worksheets("Resultaten").Range("H5").Value = GemPers
+Worksheets("Resultaten").Range("G6").Value = "Mediaan"
+Worksheets("Resultaten").Range("H6").Value = MedPers
+Worksheets("Resultaten").Range("G7").Value = "Standaardafwijking"
+Worksheets("Resultaten").Range("H7").Value = SDPers
+Worksheets("Resultaten").Range("G8").Value = "Minimum"
+Worksheets("Resultaten").Range("H8").Value = MinPers
+Worksheets("Resultaten").Range("G9").Value = "Maximum"
+Worksheets("Resultaten").Range("H9").Value = MaxPers
+
+Jaar = Right(ActiveWorkbook.Path, 4)
+'Stad = Application.InputBox("Welke stad?", Type:=2)
+Set Analyse = Workbooks("Panel vervennootschappelijking 1-0.xlsx")
+Analyse.Worksheets(Stad).Activate
+Select Case Jaar
+    Case 2011
+        Range("B1").Value = Jaar
+        Range("B2:B9") = Berekening.Worksheets("Resultaten").Range("B2:B9").Value
+        Range("B11:B18") = Berekening.Worksheets("Resultaten").Range("E2:E9").Value
+        Range("B20:B27") = Berekening.Worksheets("Resultaten").Range("H2:H9").Value
+    Case 2010
+        Range("C1").Value = Jaar
+        Range("C2:C9") = Berekening.Worksheets("Resultaten").Range("B2:B9").Value
+        Range("C11:C18") = Berekening.Worksheets("Resultaten").Range("E2:E9").Value
+        Range("C20:C27") = Berekening.Worksheets("Resultaten").Range("H2:H9").Value
+    Case 2009
+        Range("D1").Value = Jaar
+        Range("D2:D9") = Berekening.Worksheets("Resultaten").Range("B2:B9").Value
+        Range("D11:D18") = Berekening.Worksheets("Resultaten").Range("E2:E9").Value
+        Range("D20:D27") = Berekening.Worksheets("Resultaten").Range("H2:H9").Value
+    Case 2008
+        Range("E1").Value = Jaar
+        Range("E2:E9") = Berekening.Worksheets("Resultaten").Range("B2:B9").Value
+        Range("E11:E18") = Berekening.Worksheets("Resultaten").Range("E2:E9").Value
+        Range("E20:E27") = Berekening.Worksheets("Resultaten").Range("H2:H9").Value
+    Case 2007
+        Range("F1").Value = Jaar
+        Range("F2:F9") = Berekening.Worksheets("Resultaten").Range("B2:B9").Value
+        Range("F11:F18") = Berekening.Worksheets("Resultaten").Range("E2:E9").Value
+        Range("F20:F27") = Berekening.Worksheets("Resultaten").Range("H2:H9").Value
+    Case 2006
+        Range("G1").Value = Jaar
+        Range("G2:G9") = Berekening.Worksheets("Resultaten").Range("B2:B9").Value
+        Range("G11:G18") = Berekening.Worksheets("Resultaten").Range("E2:E9").Value
+        Range("G20:G27") = Berekening.Worksheets("Resultaten").Range("H2:H9").Value
+    Case 2005
+        Range("H1").Value = Jaar
+        Range("H2:H9") = Berekening.Worksheets("Resultaten").Range("B2:B9").Value
+        Range("H11:H18") = Berekening.Worksheets("Resultaten").Range("E2:E9").Value
+        Range("H20:H27") = Berekening.Worksheets("Resultaten").Range("H2:H9").Value
+    Case 2004
+        Range("I1").Value = Jaar
+        Range("I2:I9") = Berekening.Worksheets("Resultaten").Range("B2:B9").Value
+        Range("I11:I18") = Berekening.Worksheets("Resultaten").Range("E2:E9").Value
+        Range("I20:I27") = Berekening.Worksheets("Resultaten").Range("H2:H9").Value
+    Case 2003
+        Range("J1").Value = Jaar
+        Range("J2:J9") = Berekening.Worksheets("Resultaten").Range("B2:B9").Value
+        Range("J11:J18") = Berekening.Worksheets("Resultaten").Range("E2:E9").Value
+        Range("J20:J27") = Berekening.Worksheets("Resultaten").Range("H2:H9").Value
+    Case 2002
+        Range("K1").Value = Jaar
+        Range("K2:K9") = Berekening.Worksheets("Resultaten").Range("B2:B9").Value
+        Range("K11:K18") = Berekening.Worksheets("Resultaten").Range("E2:E9").Value
+        Range("K20:K27") = Berekening.Worksheets("Resultaten").Range("H2:H9").Value
+    Case 2001
+        Range("L1").Value = Jaar
+        Range("L2:L9") = Berekening.Worksheets("Resultaten").Range("B2:B9").Value
+        Range("L11:L18") = Berekening.Worksheets("Resultaten").Range("E2:E9").Value
+        Range("L20:L27") = Berekening.Worksheets("Resultaten").Range("H2:H9").Value
+End Select
+Berekening.Activate
+
+Exit Sub
+GnSelGrondslag:
+    MsgBox ("Er is geen data beschikbaar voor de grondslag")
+    Resume BerekeningVenB
+GnSelVenB:
+    MsgBox ("Er is geen data beschikbaar voor de belasting")
+    Resume BerekeningPers
+GnSelPers:
+    MsgBox ("Er is geen data beschikbaar voor de personeelsleden")
+    Resume Afdrukken
+GnMissGrondslag:
+    OntbrGrondslag = 0
+    Resume Next
+GnMissVenB:
+    OntbrVenB = 0
+    Resume Next
+GnMissPers:
+    OntbrPers = 0
+    Resume Next
+End Sub
+'Sub vervgrafiek()
+''Maakt grafiek voor cijfers analyse vervennootschappelijking
+'Dim Bron As Range
+'
+'Set Bron = Selection
+'ActiveSheet.Shapes.AddChart.Select
+'   With ActiveChart
+'    .ChartType = xlColumnClustered
+'    .SetSourceData Source:=Bron
+'    .SeriesCollection(1).XValues = Range("B1:G1")
+'    .SetElement (msoElementPrimaryCategoryAxisReverse)
+'    .HasTitle = True
+'    .ChartTitle.Text = Application.ActiveSheet.Name
+'    .SeriesCollection(1).Trendlines.Add Type:=xlLinear, Forward:=0, _
+'        Backward:=0, DisplayEquation:=0, DisplayRSquared:=0, Name:= _
+'        "Trendlijn"
+'    .SeriesCollection(1).Name = Bron.End(xlToLeft).Value
+'   End With
+'If Bron.NumberFormat = "0.0000%" Then
+'    ActiveChart.Axes(xlValue).TickLabels.NumberFormat = "0.00%"
+'End If
+'
+'End Sub
+'Sub vervgrafiek0607()
+''Maakt grafiek voor cijfers analyse vervennootschappelijking
+'Dim Bron As Range
+'
+'Set Bron = Selection
+'ActiveSheet.Shapes.AddChart.Select
+'   With ActiveChart
+'    .ChartType = xlColumnClustered
+'    .SetSourceData Source:=Bron
+'    .SeriesCollection(1).XValues = Range("F1:G1")
+'    .SetElement (msoElementPrimaryCategoryAxisReverse)
+'    .HasTitle = True
+'    .ChartTitle.Text = Application.ActiveSheet.Name
+'    .SeriesCollection(1).Trendlines.Add Type:=xlLinear, Forward:=0, _
+'        Backward:=0, DisplayEquation:=0, DisplayRSquared:=0, Name:= _
+'        "Trendlijn"
+'    .Legend.Select
+'    .SeriesCollection(1).Name = Bron.End(xlToLeft).Value
+'   End With
+'If Bron.NumberFormat = "0.0000%" Then
+'    ActiveChart.Axes(xlValue).TickLabels.NumberFormat = "0.00%"
+'End If
+'
+'End Sub
+'Sub gnnacebel()
+'Dim i As Long
+'Dim Lijst As Range
+'Dim Counter As Long
+'Dim LeegOndNr As Range
+''macro controleert of er een code in de cel staat en kopieert het ondernemingsnummer van de ontbrekende naar een lijst
+''selecteer hiervoor de eerste cel van de nacebel-kolom
+'Aantal = Application.InputBox("Hoeveel rijen?", Type:=1)
+'Application.ScreenUpdating = False
+'Set Lijst = Application.Workbooks("Lijst ontbrekende nacebels.xlsx").Worksheets("Blad1").Range("A1")
+'Counter = 1
+'Lijst.Value = ActiveSheet.Name
+'For i = 1 To Aantal - 2
+'    If ActiveCell = "" Then
+'        If ActiveCell.Offset(0, -5).Value <> "" Then
+'        Lijst.Offset(Counter, 0) = ActiveCell.Offset(0, -5).Value
+'        Else
+'        Set LeegOndNr = ActiveCell.Offset(0, -5)
+'        Lijst.Offset(Counter, 0) = LeegOndNr.End(xlUp).Value
+'        End If
+'    Counter = Counter + 1
+'    End If
+'    ActiveCell.Offset(1, 0).Select
+'Next i
+'Application.ScreenUpdating = True
+'End Sub
+'Sub VervangNacebel()
+'Dim i As Long
+'Dim OndernemingsNr As Range
+'Dim LeegOndNr As Range
+'Dim Zoekcode As Range
+'Dim Begin As Range
+'Dim Einde As Range
+''macro gabaseerd op gnnacebel, die de opgezochte codes invult op basis van de ondernemingsnummers
+'Aantal = Application.InputBox("Hoeveel rijen?", Type:=1)
+'Set Zoekcode = Application.InputBox("Selecteer range met ondernemingsnummers opzoeking ontbrekende", Type:=8)
+'Application.ScreenUpdating = False
+'For i = 1 To Aantal - 2
+'    If ActiveCell = "" Then
+'        If ActiveCell.Offset(0, -5).Value <> "" Then
+'            Set OndernemingsNr = ActiveCell.Offset(0, -5)
+'            On Error GoTo Kleurcel
+'            Set Begin = Zoekcode.Find(OndernemingsNr.Value, LookIn:=xlValues, Lookat:=xlPart, SearchOrder:=xlByRows, matchbyte:=False).Offset(0, 3)
+'            On Error GoTo 0
+'            Set Einde = Begin.Offset(0, 1)
+'            Range(Begin, Einde).Copy
+'            ActiveCell.PasteSpecial
+'        Else
+'            Set LeegOndNr = ActiveCell.Offset(0, -5)
+'            OndernemingsNr = LeegOndNr.End(xlUp).Value
+'            On Error GoTo Kleurcel
+'            Set Begin = Zoekcode.Find(OndernemingsNr, LookIn:=xlValues, Lookat:=xlPart, SearchOrder:=xlByRows, matchbyte:=False).Offset(0, 3)
+'            On Error GoTo 0
+'            Set Einde = Begin.Offset(0, 1)
+'            Range(Begin, Einde).Copy
+'            ActiveCell.PasteSpecial
+'        End If
+'        If Begin.Offset(0, 2).Value <> "" Then
+'            Range(ActiveCell.EntireRow.Range("A2"), ActiveCell.SpecialCells(xlLastCell)).Select
+'            Selection.Cut Destination:=ActiveCell.Offset(1, 0)
+'            Set Begin = Begin.Offset(0, 2)
+'            Set Einde = Begin.Offset(0, 1)
+'            Range(Begin, Einde).Copy
+'            ActiveCell.Offset(0, 7).Select
+'            ActiveCell.PasteSpecial
+'        End If
+'Volgende:
+'    End If
+'    ActiveCell.Offset(1, 0).Select
+'Next i
+'Application.ScreenUpdating = True
+'
+'Exit Sub
+'
+'Kleurcel:
+'    ActiveCell.Interior.ColorIndex = 3
+'    Resume Volgende
+'
+'End Sub
+'Sub openKBO()
+''Opent de gegevens in de KBO voor het geselecteerde ondernemingsnummer
+'Dim Deel1 As String
+'Dim Deel2 As String
+'Dim Deel3 As String
+'Deel1 = Mid(ActiveCell.Value, 1, 4)
+'Deel2 = Mid(ActiveCell.Value, 6, 3)
+'Deel3 = Mid(ActiveCell.Value, 10, 3)
+'ActiveWorkbook.FollowHyperlink Address:="http://kbopub.economie.fgov.be/kbopub/zoekwoordenform.html?ondernemingsnummer=" & Deel1 & "+" & Deel2 & "+" & Deel3 & "&actionEntnr=Zoek+onderneming&natuurlijkPersoon=true&_natuurlijkPersoon=on&rechtsPersoon=true&_rechtsPersoon=on&searchWord=&_oudeBenaming=on&pstcdeNPRP=&postgemeente1=&familynameFonetic=&pstcdeNPFonetic=&postgemeente2=&searchwordRP=&_oudeBenaming=on&pstcdeRPFonetic=&postgemeente3=&rechtsvormFonetic=ALL&familynameExact=&firstName=&pstcdeNPExact=&postgemeente4=&firmName=&pstcdeRPExact=&postgemeente5=&rechtsvormExact=ALL"
+'End Sub
+'
+'Sub controleKBO()
+''Opent 5 te controleren ondernemingsnummers in de KBO met een wachttijd van 5 sec
+'Dim i As Long
+'Dim Counter As Long
+'Dim Herplaatsen As Range
+'
+'Application.ScreenUpdating = False
+'Counter = 0
+'Do While Counter < 5
+'    If ActiveCell = "" Then
+'        Set Herplaatsen = ActiveCell
+'        ActiveCell.Offset(0, -5).Activate
+'        Call openKBO
+'        Application.Wait Now + TimeValue("00:00:05")
+'        Herplaatsen.Activate
+'        Counter = Counter + 1
+'    End If
+'    ActiveCell.Offset(1, 0).Select
+'Loop
+'Application.ScreenUpdating = True
+'ActiveCell.Select
+'End Sub
+'Sub KorteNace()
+'Dim i As Long
+'Dim Lijst As Range
+'Dim Counter As Long
+''macro controleert of er een code van minder dan 4 tekens in de cel staat en kopieert die codes naar een lijst
+''selecteer hiervoor de eerste cel van de nacebel-kolom
+'
+'Aantal = Application.InputBox("Hoeveel rijen?", Type:=1)
+'Application.ScreenUpdating = False
+'Set Lijst = Application.Workbooks("Conversie vrije beroepen nacebel 2008 naar 2003 volgens Belfin.xlsx").Worksheets("Korte nacebels").Range("A1")
+'Counter = 1
+'Lijst.Value = ActiveSheet.Name
+'For i = 1 To Aantal - 2
+'    If Len(ActiveCell.Value) < 5 Then
+'        Lijst.Offset(Counter, 0) = ActiveCell.Value
+'        Counter = Counter + 1
+'    End If
+'    ActiveCell.Offset(1, 0).Select
+'Next i
+'Application.ScreenUpdating = True
+'End Sub
+'
+'Sub tekstnr()
+''zet lege cel als tekst om in een lege cel als getal verschillend van 0
+'Dim xCell As Range
+'Dim Rijen As Double
+'Dim Counter As Double
+'Dim Controle As Double
+'Rijen = 337
+'Controle = 0
+'Counter = 0
+'For Each xCell In Worksheets("aalst").Range(Cells(2, 11), Cells(Rijen, 11))
+'        If Not xCell.Value = "" Then
+'            xCell = CDec(xCell)
+'            Controle = Controle + 1
+'        Else
+'            Counter = Counter + 1
+'        End If
+'    Next xCell
+'    MsgBox Counter & " " & Controle
+'End Sub
+Sub xtraberekeningen()
+
+Dim Rijen As Long
+Dim Einde As Long
+Dim Jaar As Long
+Dim Berekening As Workbook
+Dim Analyse As Workbook
+
+Dim SomGrondslag As Double
+Dim SomGrondslagZNul As Double
+
+Dim GemVenB As Double
+Dim SomVenB As Double
+
+Dim xCell As Range
+
+Dim ImpDrukVoll As Double
+Dim ImpDrukZNul As Double
+Dim EffDrukVoll As Double
+Dim EffDrukZNul As Double
+
+Set Berekening = Application.ActiveWorkbook
+'Stad = Application.InputBox("Welke stad?", Type:=2)
+
+'Worksheets("Zonder nul").UsedRange.Clear 'wis de vorige inhoud
+'Worksheets("Resultaten").Range("$J$1:$L$7").Clear 'wis de vorige inhoud
+
+Rijen = Worksheets("Selectie").Range("C1").End(xlDown).Row
+
+Berekening:
+Worksheets("Selectie").Activate
+SomGrondslag = WorksheetFunction.Sum(Worksheets("Selectie").Range(Cells(2, 18), Cells(Rijen, 18)))
+SomVenB = WorksheetFunction.Sum(Worksheets("Selectie").Range(Cells(2, 12), Cells(Rijen, 12)))
+ImpDrukVoll = SomVenB / SomGrondslag
+GemVenB = WorksheetFunction.Average(Worksheets("Selectie").Range(Cells(2, 12), Cells(Rijen, 12)))
+Range("W1") = "Effectieve belastingdruk"
+    For Each xCell In Range(Cells(2, 23), Cells(Rijen, 23))
+        If xCell.Offset(0, -5) <> 0 Then
+            If xCell.Offset(0, -5) <> "" Then
+                If xCell.Offset(0, -11) <> "" Then
+                    xCell = xCell.Offset(0, -11) / xCell.Offset(0, -5)
+                Else
+                xCell = 0
+                End If
+            Else
+            xCell = 0
+            End If
+        Else
+            xCell = 0
+        End If
+    Next xCell
+EffDrukVoll = WorksheetFunction.Average(Worksheets("Selectie").Range(Cells(2, 23), Cells(Rijen, 23)))
+
+BerekeningZonderNul:
+ActiveSheet.Range("$A$1:$W$1").AutoFilter Field:=12, Criteria1:=">0", Operator:=xlAnd
+ActiveSheet.Cells.SpecialCells(xlCellTypeVisible).Copy
+
+Sheets.Add(After:=ActiveSheet).Name = "Zonder nul"
+Einde = Worksheets("Zonder nul").Range("C1").End(xlDown).Row
+Worksheets("Zonder nul").Range("A1").PasteSpecial
+Worksheets("Zonder nul").Activate
+EffDrukZNul = WorksheetFunction.Average(Worksheets("Zonder nul").Range(Cells(2, 23), Cells(Einde, 23)))
+SomGrondslagZNul = WorksheetFunction.Sum(Worksheets("Zonder nul").Range(Cells(2, 18), Cells(Einde, 18)))
+ImpDrukZNul = SomVenB / SomGrondslagZNul
+
+Worksheets("Selectie").Activate
+ActiveSheet.Range("$A$1:$W$1").AutoFilter
+
+Afdrukken:
+
+Worksheets("Resultaten").Range("K1").Value = "Extra berekeningen"
+Worksheets("Resultaten").Range("J2").Value = "Totale opbrengst belasting"
+Worksheets("Resultaten").Range("K2").Value = SomVenB
+Worksheets("Resultaten").Range("J3").Value = "Totale grondslag belasting"
+Worksheets("Resultaten").Range("K3").Value = SomGrondslag
+Worksheets("Resultaten").Range("J4").Value = "Gemiddelde impliciete druk volledig sample"
+Worksheets("Resultaten").Range("K4").Value = ImpDrukVoll
+Worksheets("Resultaten").Range("J5").Value = "Gemiddelde impliciete druk zonder nulwaarden"
+Worksheets("Resultaten").Range("K5").Value = ImpDrukZNul
+Worksheets("Resultaten").Range("J6").Value = "Gemiddelde effectieve druk volledig sample"
+Worksheets("Resultaten").Range("K6").Value = EffDrukVoll
+Worksheets("Resultaten").Range("J7").Value = "Gemiddelde effectieve druk zonder nulwaarden"
+Worksheets("Resultaten").Range("K7").Value = EffDrukZNul
+
+Jaar = Right(ActiveWorkbook.Path, 4)
+Set Analyse = Workbooks("Panel vervennootschappelijking 1-0.xlsx")
+Analyse.Worksheets(Stad).Activate
+Select Case Jaar
+    Case 2011
+        Range("B36:B41") = Berekening.Worksheets("Resultaten").Range("K2:K7").Value
+        Range("B38:B41").NumberFormat = "0.00%"
+    Case 2010
+        Range("C36:C41") = Berekening.Worksheets("Resultaten").Range("K2:K7").Value
+        Range("C38:C41").NumberFormat = "0.00%"
+    Case 2009
+        Range("D36:D41") = Berekening.Worksheets("Resultaten").Range("K2:K7").Value
+        Range("D38:D41").NumberFormat = "0.00%"
+    Case 2008
+        Range("E36:E41") = Berekening.Worksheets("Resultaten").Range("K2:K7").Value
+        Range("E38:E41").NumberFormat = "0.00%"
+    Case 2007
+        Range("F36:F41") = Berekening.Worksheets("Resultaten").Range("K2:K7").Value
+        Range("F38:F41").NumberFormat = "0.00%"
+    Case 2006
+        Range("G36:G41") = Berekening.Worksheets("Resultaten").Range("K2:K7").Value
+        Range("G38:G41").NumberFormat = "0.00%"
+    Case 2005
+        Range("H36:H41") = Berekening.Worksheets("Resultaten").Range("K2:K7").Value
+        Range("H38:H41").NumberFormat = "0.00%"
+    Case 2004
+        Range("I36:I41") = Berekening.Worksheets("Resultaten").Range("K2:K7").Value
+        Range("I38:I41").NumberFormat = "0.00%"
+    Case 2003
+        Range("J36:J41") = Berekening.Worksheets("Resultaten").Range("K2:K7").Value
+        Range("J38:J41").NumberFormat = "0.00%"
+    Case 2002
+        Range("K36:K41") = Berekening.Worksheets("Resultaten").Range("K2:K7").Value
+        Range("K38:K41").NumberFormat = "0.00%"
+    Case 2001
+        Range("L36:L41") = Berekening.Worksheets("Resultaten").Range("K2:K7").Value
+        Range("L38:L41").NumberFormat = "0.00%"
+End Select
+Analyse.Save
+Berekening.Save
+Berekening.Close
+End Sub
+Sub nacetellen()
+'telt het aantal bedrijven in het sample in een bepaalde nacebel sector
+'open "Nacebel 3 cijferige codes vervennootschappelijking.xlsx" en "Analyse vervennootschappelijking 1-6.xlsx"
+Dim Cell As Range
+Dim Berekening As Workbook
+Dim Sectoren As Range
+Dim Sectoraantal As Range
+Dim Telling As Range
+Dim Rij As Long
+Dim Kolom As Long
+Dim Analyse As Workbook
+Dim Jaar As Long
+
+Set Berekening = ActiveWorkbook
+Berekening.Worksheets("Resultaten").Range("M1") = "Sector"
+Berekening.Worksheets("Resultaten").Range("N1") = "Aantal"
+Stad = Application.InputBox("Welke stad?", Type:=2)
+'Nacebel 2008:
+Workbooks("Nacebel 3 cijferige codes vervennootschappelijking.xlsx").Worksheets("Blad1").Range("C2:C26").Copy (Berekening.Worksheets("Resultaten").Range("M2:M26"))
+Set Sectoren = Berekening.Worksheets("Resultaten").Range("M2:M26")
+Set Telling = Berekening.Worksheets("Resultaten").Range("N2:N26")
+'Nacebel 2003:
+'Workbooks("Nacebel 3 cijferige codes vervennootschappelijking.xlsx").Worksheets("Blad1").Range("A2:A17").Copy (Berekening.Worksheets("Resultaten").Range("M2:M17"))
+'Set Sectoren = Berekening.Worksheets("Resultaten").Range("M2:M17")
+'Set Telling = Berekening.Worksheets("Resultaten").Range("N2:N17")
+Telling.Value = Null
+
+Worksheets("Preselectie").Activate
+For Each Cell In Berekening.Worksheets("Preselectie").Range("U2", Range("U2").End(xlDown))
+    If Cell <> 0 Then
+        Set Sectoraantal = Sectoren.Find(Cell.Value, LookIn:=xlValues, lookat:=xlWhole, searchorder:=xlByRows, matchbyte:=False).Offset(0, 1)
+        Sectoraantal.Value = Sectoraantal + 1
+    End If
+Next Cell
+Jaar = Right(ActiveWorkbook.Path, 4)
+Telling.Copy
+Set Analyse = Application.Workbooks("Analyse vervennootschappelijking 1-6.xlsx")
+Analyse.Worksheets(Stad).Activate
+Select Case Jaar
+    Case 2011
+        Rij = 2
+        Range("B50").PasteSpecial
+    Case 2010
+        Rij = 28
+        Range("C50").PasteSpecial
+    Case 2009
+        Rij = 54
+        Range("D50").PasteSpecial
+    Case 2008
+        Rij = 80
+        Range("E50").PasteSpecial
+    Case 2007
+        Rij = 106
+        Range("F50").PasteSpecial
+    Case 2006
+        Rij = 123
+        Range("G50").PasteSpecial
+End Select
+Select Case Stad
+    Case "Antwerpen"
+        Kolom = 2
+    Case "Gent"
+        Kolom = 3
+    Case "Mechelen"
+        Kolom = 4
+    Case "Aalst"
+        Kolom = 5
+    Case "Brugge"
+        Kolom = 6
+    Case "Genk"
+        Kolom = 7
+    Case "Hasselt"
+        Kolom = 8
+    Case "Kortrijk"
+        Kolom = 9
+    Case "Leuven"
+        Kolom = 10
+    Case "Oostende"
+        Kolom = 11
+    Case "Roeselare"
+        Kolom = 12
+    Case "Sint-Niklaas"
+        Kolom = 13
+    Case "Turnhout"
+        Kolom = 14
+End Select
+Analyse.Worksheets("Sectoroverzicht").Range("A1").Offset(Rij - 1, Kolom).PasteSpecial
+Analyse.Save
+Berekening.Save
+Berekening.Close
+End Sub
+Sub PanelVerv()
+'Een panel doorheen verschillende files filteren op basis van een dynamisch array aan identificaties
+Dim Stad As String
+Dim Jaar As Long
+Dim Bron As Workbook
+Dim Onderneming() As String
+Dim Panel As Workbook
+Dim Nieuw As Workbook
+Dim Ondernemingsnrs As Range
+Dim counter As Long
+Dim Cell As Range
+Dim Gefilterd As Workbook
+
+Stad = Application.InputBox("Welke stad?", Type:=2)
+Jaar = Right(ActiveWorkbook.Path, 4)
+Set Bron = ActiveWorkbook 'te bewerken workbook
+'Stap 1: panel vaststellen
+Set Panel = Workbooks(Stad & " 2011 2-0.xlsx") 'workbook met panel
+If Dir("D:\My Documents\Projecten\Stedelijk fiscaal instrumentarium\Data\Vervennootschappelijking\Analyse\Panel\" & Jaar & "\") = "" Then
+    MkDir ("D:\My Documents\Projecten\Stedelijk fiscaal instrumentarium\Data\Vervennootschappelijking\Analyse\Panel\" & Jaar & "\")
+End If
+Application.Workbooks.Add
+ActiveWorkbook.SaveAs Filename:="D:\My Documents\Projecten\Stedelijk fiscaal instrumentarium\Data\Vervennootschappelijking\Analyse\Panel\" & Jaar & "\" & Stad & " " & Jaar & " Panel 1-0.xlsx", FileFormat:=51, ConflictResolution:=3
+Set Nieuw = ActiveWorkbook
+Panel.Worksheets("Selectie").Activate
+'range met identificaties van panel (ondernemingsnummers)
+Set Ondernemingsnrs = Panel.Worksheets("Selectie").Range("C2", Range("C2").End(xlDown))
+'grootte van dynamisch array bepalen
+Aantal = Ondernemingsnrs.Count
+'dynamisch array instellen met naam onderneming
+ReDim Onderneming(Aantal - 1) '-1 want begint met plaats 0
+'id nummer van arrayelement bepalen
+counter = 0
+'array vullen met waarden uit panel
+For Each Cell In Ondernemingsnrs
+    Onderneming(counter) = Cell.Value
+    counter = counter + 1
+Next Cell
+Bron.Activate
+'Stap 2: filteren in het bestand met ruwe data op basis identificatie panel via waarden in volledig array
+Bron.Sheets.Add(After:=Sheets(Sheets.Count)).Name = "Panel 2011"
+Bron.Sheets(1).Range("$A$1:$V$1").AutoFilter Field:=3, Criteria1:=Onderneming, Operator:=xlFilterValues
+Bron.Sheets(1).Cells.SpecialCells(xlCellTypeVisible).Copy
+Worksheets("Panel 2011").Range("A1").PasteSpecial
+Nieuw.Activate
+Nieuw.Worksheets(1).Range("A1").PasteSpecial
+Sheets(1).Name = "Preselectie"
+Nieuw.Save
+Bron.Activate
+Sheets(1).Range("$A$1:$V$1").AutoFilter
+Bron.Save
+Bron.Close
+Nieuw.Close
+Panel.Close
+Beep
+'************************EEN ARRAY AFDRUKKEN************************
+'Bron.Worksheets("Blad1").Range("A1").Resize(1, Aantal).Value = Onderneming
+End Sub
+Sub uniekeonderneming()
+Dim Einde As Range
+Dim myfile As String
+
+myfile = ActiveWorkbook.Name
+
+Do
+    Sheets(1).Cells.SpecialCells(xlCellTypeVisible).Copy
+    Sheets.Add(After:=Worksheets("Preselectie")).Name = "Selectie"
+    'dubbele verwijderen
+    Worksheets("Selectie").Range("A1").PasteSpecial
+    Worksheets("Selectie").Range("A1").Activate
+    Set Einde = ActiveCell.SpecialCells(xlLastCell)
+    Worksheets("Selectie").Range("A1", Einde).RemoveDuplicates Columns:=3, Header:=xlYes
+    If Worksheets.Count > 2 Then
+        Application.DisplayAlerts = False
+        Worksheets("Blad2").Delete
+        Worksheets("Blad3").Delete
+        Application.DisplayAlerts = True
+    End If
+ActiveWorkbook.Save
+ActiveWorkbook.Close
+Loop Until ActiveWorkbook Is Nothing 'While myfile <> ActiveWorkbook.Name
+
+End Sub
+Sub Rijenteller()
+Dim EBVBA As Long
+Dim Sample As Long
+Dim counter As Long
+Dim Bron As Workbook
+Dim Doel As Range
+    
+    counter = 0
+    Do
+        ActiveWindow.ActivateNext
+        Set Bron = ActiveWorkbook
+        Sheets(1).Activate
+        EBVBA = CountUniqueValues(Sheets(1).Range("C2", Range("C2").End(xlDown)))
+'        Sheets(3).Activate
+'        Sample = Sheets(3).Range("C2", Range("C2").End(xlDown)).Rows.Count
+'        Sheets("Resultaten").Range("P2") = "Totaal aantal EBVBA's"
+'        Sheets("Resultaten").Range("P3") = "Sample"
+'        Sheets("Resultaten").Range("Q2") = EBVBA
+'        Sheets("Resultaten").Range("Q3") = Sample
+        'Set Doel = Workbooks("Vervennootschappelijking Ter vergelijking EBVBA.xlsx").Worksheets(1).Range(Range("A1").Offset(Counter, 0), Range("A1").Offset(Counter + 1, 1))
+'        Sheets("Resultaten").Range("P2:Q3").Copy
+        Workbooks("Vervennootschappelijking Ter vergelijking EBVBA.xlsx").Worksheets(1).Activate
+        Range("A1").Offset(counter, 0) = Bron.Name
+        Workbooks("Vervennootschappelijking Ter vergelijking EBVBA.xlsx").Worksheets(1).Range("A1").Offset(counter + 1, 0) = EBVBA
+        Bron.Activate
+        Bron.Save
+        Bron.Close
+        counter = counter + 2
+        Workbooks("Vervennootschappelijking Ter vergelijking EBVBA.xlsx").Activate
+    Loop Until Workbooks.Count = 2
+End Sub
+Function CountUniqueValues(InputRange As Range) As Long
+Dim cl As Range, UniqueValues As New Collection
+    Application.Volatile
+    On Error Resume Next ' ignore any errors
+    For Each cl In InputRange
+        UniqueValues.Add cl.Value, CStr(cl.Value) ' add the unique item
+    Next cl
+    On Error GoTo 0
+    CountUniqueValues = UniqueValues.Count
+End Function
