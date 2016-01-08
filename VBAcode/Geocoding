@@ -1,0 +1,295 @@
+Option Explicit
+Sub Straatennummer()
+'4
+'Het complete adres scheiden in straatnaam, huisnummer met eventueel bisnummer en subadres (=bus- en appartementsnummers)
+'Aan het eind van het kuisen, net voor het geocoderen uitvoeren
+    Dim Aantal As Long
+    Dim Cel As Range
+    Dim StraatMetNummer As String
+    Dim Elementen As Variant
+    Dim i As Long
+    Dim Huisnummer As String
+    Dim bisnummer As String
+    Dim Subadres As String
+    Dim Straatnaam As String
+    
+    Application.ScreenUpdating = False
+
+    'Verwijdert rijen met lege cellen voor postcode of adres
+    On Error Resume Next 'on error ingeval er geen lege zijn
+    ActiveSheet.Range("$A$1:$CI$1").AutoFilter Field:=6, Criteria1:="="
+    ActiveSheet.AutoFilter.Range.Columns(6).SpecialCells(xlCellTypeBlanks).EntireRow.Delete
+    ActiveSheet.Range("$A$1:$CI$1").AutoFilter
+    ActiveSheet.Range("$A$1:$CI$1").AutoFilter Field:=8, Criteria1:="="
+    ActiveSheet.AutoFilter.Range.Columns(8).SpecialCells(xlCellTypeBlanks).EntireRow.Delete
+    ActiveSheet.Range("$A$1:$CI$1").AutoFilter
+    On Error GoTo 0
+        
+    Range("CF1") = "USadres" 'hoofding voor filters
+    Range("CG1") = "Huisnummer" 'hoofding voor filters
+    Range("CH1") = "Subadres" 'hoofding voor filters
+    Range("CI1") = "Straatnaam" 'hoofding
+    Range("CG:CH").NumberFormat = "@" 'De huisnummers in tekstformaat opmaken, anders worden sommigen naar datum en tijd omgezet
+        
+    Aantal = Range("A2", Range("A2").End(xlDown)).Count - 1
+    For Each Cel In Range("H2", Range("H2").Offset(Aantal, 0))
+        Huisnummer = "µ$µ" 'nonsensstartwaarde, dit haalt verderop de straten zonder huisnummer eruit
+        StraatMetNummer = Cel.Value
+        
+        Elementen = Split(StraatMetNummer, " ") 'splits de tekst op basis van spaties
+        For i = 0 To UBound(Elementen) 'ga alle elementen van de gesplitste tekst af
+            If IsNumeric(Left(Elementen(i), 1)) = True Then 'selecteer het getal
+                If i <> 0 Then 'als het gelijk is aan 0, dan begint de straatnaam met een nummer en is dit niet het huisnummer
+                    Huisnummer = Elementen(i) 'het (eerste) getal is het huisnummer
+                    Exit For
+                End If
+            End If
+        Next i
+        
+        Straatnaam = Split(StraatMetNummer, Huisnummer)(0) 'de straatnaam is het element voor het huisnummer
+        
+        If Huisnummer <> "µ$µ" Then 'straten zonder huisnummer niet splitsen
+            Huisnummer = Split(Huisnummer, "/")(0) 'toevoegingen uit het huisnummer verwijderen
+            Huisnummer = Split(Huisnummer, "-")(0)
+            Huisnummer = Split(Huisnummer, ".")(0)
+            Subadres = Split(StraatMetNummer, Huisnummer)(1) 'Alles na het huisnummer meenemen, dit is een array bestaande uit de elementen gesplits op basis van de waarde voor huisnummer, dus eerst de straatnaam op positie 0 en daarna hetgene achter het huisnummer komt op positie 1
+            bisnummer = Replace(Subadres, "/", "") 'het mogelijke bisnummer reduceren tot haar minimum
+            bisnummer = Replace(bisnummer, " ", "")
+            bisnummer = Replace(bisnummer, "-", "")
+            If Len(bisnummer) = 1 Then 'een bisnummer bestaat uit slechts 1 letter
+                If IsNumeric(bisnummer) = False Then 'een bisnummer is meestal geen cijfer
+                    Huisnummer = Huisnummer & bisnummer 'volledig huisnummer, met bisnummer
+                    Subadres = "" 'anders wordt het bisnummer opgegeven als subadres en dit is incorrect
+                Else
+                    Subadres = Replace(Subadres, "/", " ") 'backslashes uit de subadressen halen om fouten in database te vermijden, andere tekens kunnen van belang zijn
+                    Subadres = Trim(Subadres)
+                End If
+            Else
+                Subadres = Replace(Subadres, "/", " ") 'backslashes uit de subadressen halen om fouten in database te vermijden, andere tekens kunnen van belang zijn
+                Subadres = Trim(Subadres)
+                If Left(Subadres, 1) = "-" Then 'als het eerste karakter een - is, dan werd er een range aan huisnummers opgegeven.
+                    Subadres = "" 'Dit is geen subadres en wordt gewist. Nadeel is dat een eventueel subadres daarachter ook gewist is
+                End If
+            End If
+            
+            Cel.Offset(0, 76) = Huisnummer & " " & Straatnaam 'US Adress formaat
+            Cel.Offset(0, 77) = Huisnummer 'Ter identificatie van huisnummers die niet kunnen zoals nummer nul
+            Cel.Offset(0, 78) = Subadres 'bus- of appartementnummer voor CRAB-match
+            Cel.Offset(0, 79) = Straatnaam
+            
+        Else
+            Cel.Offset(0, 76) = Straatnaam 'adressen zonder huisnummer
+            Cel.Offset(0, 79) = Straatnaam 'straatnaam voor CRAB-match
+        End If
+    Next Cel
+    
+    Application.ScreenUpdating = True
+    MsgBox "Afgelopen!"
+    
+End Sub
+
+Sub OpmaakAdressen()
+'3
+'Haalt alle slechte adressen eruit cf. criteria
+'Uit te voeren voordat er met de adressen gewerkt wordt: bvb. voor DubbelImmoweb of geocoderen
+
+Dim First As Range
+Dim Second As Range
+Dim Third As Range
+Dim Fourth As Range
+Dim Fifth As Range
+Dim Sixth As Range
+Dim Probleem As Range
+
+'Deze eerste filter enkel toepassen wanneer het adres na htmlstraat nog steeds niet goed is
+'ActiveSheet.Range("$A$1:$CI$1").AutoFilter Field:=8, Criteria1:="=*<li>*" 'filtert alle straten waarin <li> voorkomt, dus dat zijn die zonder nummer
+'Set First = ActiveSheet.AutoFilter.Range 'dit is het volledige range waarop de filter slaat
+'First.Offset(1, 0).SpecialCells(xlCellTypeVisible).EntireRow.Delete 'wist ook de eerste lege rij onder de zichtbare cellen
+ActiveSheet.Range("$A$1:$CI$1").AutoFilter Field:=8, Criteria1:="=*xx*" 'filtert alle straten met xx in, alleen in Wallonië is er een doodlopende straat met die combinatie in
+Set Second = ActiveSheet.AutoFilter.Range
+Second.Offset(1, 0).SpecialCells(xlCellTypeVisible).EntireRow.Delete
+ActiveSheet.Range("$A$1:$CI$1").AutoFilter Field:=8, Criteria1:="=*niet vrij*" 'filtert alle straten met 'niet vrij(gegeven)' in
+Set Third = ActiveSheet.AutoFilter.Range
+Third.Offset(1, 0).SpecialCells(xlCellTypeVisible).EntireRow.Delete
+If Not Columns(8).Find("onbekende", lookat:=xlPart, searchorder:=xlByRows, MatchCase:=False) Is Nothing Then 'controleren dat "onbekende" (bvb. soldaat) niet tussen resultaten zit.
+    MsgBox "Het woord 'Onbekende' staat in de adreskolom, dit verstoort de filter, verplaats deze record tijdelijk naar een ander blad of wis de waarde"
+    Exit Sub
+End If
+ActiveSheet.Range("$A$1:$CI$1").AutoFilter Field:=8, Criteria1:="=*onbekend" 'filtert alle straten die eindigen met 'onbekend'
+Set Fifth = ActiveSheet.AutoFilter.Range
+Fifth.Offset(1, 0).SpecialCells(xlCellTypeVisible).EntireRow.Delete
+If Not Columns(8).Find("makelaarsstraat", lookat:=xlPart, searchorder:=xlByRows, MatchCase:=False) Is Nothing Then 'controleren dat "makelaarsstraat" niet tussen resultaten zit.
+    MsgBox "'Makelaarsstraat' in bestand, dit verstoort de filter, verplaats deze record tijdelijk naar een ander blad"
+    Exit Sub
+End If
+ActiveSheet.Range("$A$1:$CI$1").AutoFilter Field:=8, Criteria1:="=*makelaar*" 'filtert alle straten die 'makelaar' bevatten
+Set Sixth = ActiveSheet.AutoFilter.Range
+Sixth.Offset(1, 0).SpecialCells(xlCellTypeVisible).EntireRow.Delete
+ActiveSheet.Range("$A$1:$CI$1").AutoFilter
+
+End Sub
+Sub htmlstraat()
+'zit in immobasis
+'Splitst de straatnamen op basis van achtergebleven html code "</li><li>" en behoud enkel nog het eerste deel
+', namelijk de straatnaam. Het tweede deel is een herhaling van postcode en gemeente
+
+Dim rng As Range
+Dim Gebiedaantal As Long
+Dim Gebied As Long
+Dim StraatMetNummer As String
+Dim Elementen As Variant
+Dim Cel As Range
+
+
+ActiveSheet.Range("$A$1:$CI$1").AutoFilter Field:=8, Criteria1:="=*<li>*" 'filtert alle straten waarin <li> voorkomt, dus dat zijn die zonder nummer
+Set rng = ActiveSheet.AutoFilter.Range
+Gebiedaantal = rng.SpecialCells(xlCellTypeVisible).Areas.Count 'De zichtbare rijen kunnen op verschillende plaatsen (areas) zitten in het werkblad. We tellen het aantal gebieden, zodat we elk kunnen doorlopen.
+            For Gebied = 2 To Gebiedaantal 'alle gebieden doorlopen
+                rng.SpecialCells(xlCellTypeVisible).Areas(Gebied).Columns(8).Select 'de cellen van de eerste kolom in het gebied selecteren
+                For Each Cel In Selection 'elke cel van de eerste kolom binnen het gebied doorlopen
+                    StraatMetNummer = Cel.Value
+                    Elementen = Split(StraatMetNummer, "</li><li>") 'splits de tekst op basis van html overschot
+                    Cel.Value = Elementen(0)
+                Next Cel
+            Next Gebied
+ActiveSheet.Range("$A$1:$CI$1").AutoFilter
+End Sub
+
+
+Sub immobasis()
+'1
+'basisopkuis van een ruw immoscraper bestand:
+'-records zonder postcode verwijderen
+'-Prijzen en KI's zonder scheidingstekens duizendtallen weergeven
+'-'htmlstraat' uitvoeren, zodat de volgende stap niet de straatnamen wist doordat er een postcode in het adresveld staat
+'-herhaling van postcode in adresveld: het veld wissen
+
+'Op niveau postcode is de straat niet van belang en kan onmiddellijk op het bestand gewerkt worden
+'Indien op niveau straat gewerkt wordt, handmatig zoeken naar criteria OpmaakAdressen en uitzuiveren/corrigeren
+'Op niveau huisnummer mag de macro OpmaakAdressen gebruikt worden, waardoor records met onvolledige adressen gewist worden
+
+Dim Cel As Range
+
+On Error Resume Next 'on error ingeval er geen lege postcodes zijn
+ActiveSheet.Range("$A$1:$CI$1").AutoFilter Field:=6, Criteria1:="="
+ActiveSheet.AutoFilter.Range.Columns(6).SpecialCells(xlCellTypeBlanks).EntireRow.Delete
+ActiveSheet.Range("$A$1:$CI$1").AutoFilter
+On Error GoTo 0
+
+Range("K:K, L:L").NumberFormat = "00"
+
+If Not Columns(8).Find("<li>", lookat:=xlPart, searchorder:=xlByRows, MatchCase:=False) Is Nothing Then 'als <li> niet voorkomt geeft hij anders een error
+    Call htmlstraat
+End If
+
+Range("F2").End(xlDown).Offset(1, 2) = "Einde" 'stopwoord for loop
+For Each Cel In Range("H:H") 'doorloop adressen
+    If Cel.Value = "Einde" Then 'stop aan het eind
+        Exit For
+    End If
+    If Cel.Value Like "*" & Cel.Offset(0, -2).Value & "*" Then 'als de waarde van het adres de postcode bevat (*POSTCODE*)
+        Cel.Value = "" 'het adres leegmaken
+    End If
+Next Cel
+Range("F2").End(xlDown).Offset(1, 2) = "" 'het stopwoord 'Einde' verwijderen
+
+End Sub
+Sub uniekid()
+'2
+' Selecteert het meest recente pand van records met eenzelfde ID
+' Te gebruiken wanneer de prijsevolutie van het vastgoed niet relevant is. Dit geeft de laatst gekende vraagprijs
+Dim ID As Range
+
+Application.ScreenUpdating = False
+Columns("A:CI").Sort key1:=Columns(1), order1:=xlAscending, key2:=Columns(5), order2:=xlDescending, Header:=xlYes 'oplopend sorteren op ID, aflopend op datum (waardoor recentste datum bovenaan staat)
+For Each ID In Range("A2", Range("A2").End(xlDown))
+    Do While ID = ID.Offset(1, 0)
+        ID.Offset(1, 0).EntireRow.Delete 'de onnodige rijen wissen
+    Loop
+Next ID
+Application.ScreenUpdating = True
+MsgBox "Afgelopen!"
+End Sub
+Sub enkelhuisnr()
+'5
+'filter ENKEL wanneer adressen MET HUISNUMMER mogen overblijven
+
+ActiveSheet.Range("$A$1:$CI$1").AutoFilter Field:=85, Criteria1:="=", Operator:=xlOr, Criteria2:="0" 'filtert alle straten zonder huisnummer en met huisnummer nul in
+ActiveSheet.AutoFilter.Range.Offset(1, 0).SpecialCells(xlCellTypeVisible).EntireRow.Delete
+ActiveSheet.Range("$A$1:$CI$1").AutoFilter
+
+End Sub
+Sub DubbelsImmoweb()
+'6
+'Verwijdert dubbele adressen op basis van het hoogste aantal invoervelden, momenteel enkel voor huizen (identieke panden, maar met een verschillend ID, wegens verschillende makelaars bvb.)
+'Uit te voeren nadat er een selectie gebeurd is op basis van ID: enkel unieke ID's
+
+Dim ID As Range
+Dim Postcode As Double
+Dim Huisnummer As String
+Dim Straatnaam As String
+Dim rng As Range
+Dim Rijen As Long
+Dim Allerijen() As Long
+Dim i As Long
+Dim Grootste As Long
+Dim Plaats As Long
+Dim Pand As Range
+Dim Cell As Range
+Dim Gebiedaantal As Long
+Dim Gebied As Long
+
+Application.ScreenUpdating = False
+
+Range("CJ1") = "x" 'kolomhoofding voor de plaats waar de unieke adressen aangeduid worden, wordt aan het eind verwijderd
+
+Columns("A:CJ").Sort key1:=Columns(6), order1:=xlAscending, key2:=Columns(87), order2:=xlAscending, key3:=Columns(85), order3:=xlAscending, Header:=xlYes, MatchCase:=False
+Columns("A:CJ").Sort key1:=Columns(4), order1:=xlDescending, Header:=xlYes, MatchCase:=False 'Excel doet sorteren in omgekeerde volgorde, maar door beperking aantal keys, de sortering op type pand laatst uitvoeren (doel=geen appartementen met zelfde 'adres' tussen huizen)
+
+For Each ID In Range("A2", Range("A2").End(xlDown))
+    
+    Postcode = ID.Offset(0, 5).Value
+    Straatnaam = ID.Offset(0, 86).Value
+    Huisnummer = ID.Offset(0, 84).Value
+    
+    ActiveSheet.Range("$A$1:$CJ$1").AutoFilter Field:=4, Criteria1:="Huizen" 'ENKEL HUIZEN
+    ActiveSheet.Range("$A$1:$CJ$1").AutoFilter Field:=6, Criteria1:=Postcode 'eerst op postcode om minder intensief te rekenen
+    ActiveSheet.Range("$A$1:$CJ$1").AutoFilter Field:=87, Criteria1:=Straatnaam ' dit neemt enkel identieke adressen mee
+    ActiveSheet.Range("$A$1:$CJ$1").AutoFilter Field:=85, Criteria1:=Huisnummer 'eerst op postcode om minder intensief te rekenen
+    
+    Set rng = ActiveSheet.AutoFilter.Range 'enkel de gegevens die gefilterd worden
+    Rijen = rng.Columns(1).SpecialCells(xlCellTypeVisible).Count - 1 'het aantal zichtbare rijen
+    If Rijen > 1 Then 'Bij = 1 is het een uniek pand, namelijk de hoofding en het pand
+        
+        'Array maken om rij met meeste data te bepalen en Pand te noemen
+        ReDim Allerijen(Rijen - 1) '-1 want array begint met plaats 0
+        'array vullen met telling cellen voor iedere rij
+        i = 0 'startwaarde voor het arraynummer, mocht dit nog in geheugen zitten van vorige loop
+        
+        For Each Cell In rng.Range(ID, ID.End(xlDown)) 'elke cel van de eerste kolom binnen het gebied doorlopen
+            i = i + 1 'teller voor elke nieuwe cel binnen de filter
+            Cell.EntireRow.Select 'selecteren om te kunnen tellen
+            Allerijen(i - 1) = WorksheetFunction.CountA(Selection) '-1 om te beginnen bij plaats 0 in array en dan het aantal gebruikte cellen tellen en opslaan
+            If Allerijen(i - 1) = WorksheetFunction.Max(Allerijen) Then 'evalueert of de net toegevoegde waarde de hoogste is in het array, zodat dat adres kan toegewezen worden aan pand
+                Set Pand = Cell 'pand neemt de locatie aan van de cel met de hoogste waarde in het array
+            End If
+        Next Cell
+        Pand.Offset(0, 87) = 1 'aanduiding dat deze rij de meeste (of evenveel dan de vorige identieke rijen) ingevulde cellen heeft
+        
+        Set ID = ID.Offset(-1, 0) 'een rij naar boven gaan met postcode, zodat de cel die momenteel de variabele Postcode bepaalt niet gewist wordt en de macro in fout zou gaan
+        rng.Columns(88).SpecialCells(xlCellTypeBlanks).EntireRow.Delete 'de onnodige rijen wissen
+        Set ID = ID.Offset(1, 0) 'terug naar de volgende rij gaan voor postcode (kan zijn dat de huidige rij opnieuw wordt geevalueerd, maar dit is nu een unieke waarde en dit was de eenvoudigste oplossing voor het vermijden van het wissen van de variabele Postcode
+    
+    Else 'ingeval het om een uniek adres gaat
+        ID.Offset(0, 87) = 1
+    End If
+    
+    ActiveSheet.Range("$A$1:$CJ$1").AutoFilter 'filters uitschakelen
+
+Next ID
+
+Range("CJ:CJ").Clear 'de kolom met de aanduiding voor unieke adressen wissen
+Application.ScreenUpdating = True
+MsgBox "Afgelopen!"
+
+End Sub
