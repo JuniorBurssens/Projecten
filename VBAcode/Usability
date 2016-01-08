@@ -1,0 +1,142 @@
+Option Explicit
+
+Sub RijInvoegen()
+
+Dim Herplaatsen As Range
+Set Herplaatsen = ActiveCell
+Range(ActiveCell.EntireRow.Range("A2"), ActiveCell.SpecialCells(xlLastCell)).Select
+Selection.Cut Destination:=ActiveCell.Offset(1, 0)
+Herplaatsen.Select
+End Sub
+Sub wisrij()
+Dim i As Long
+Dim Aantal As Long
+
+Aantal = Application.InputBox("Hoeveel rijen?", Type:=1)
+Application.ScreenUpdating = False
+For i = 1 To Aantal
+    If ActiveCell = "" Then
+        ActiveCell.EntireRow.Delete
+    Else
+    ActiveCell.Offset(1, 0).Activate
+    End If
+Next i
+Application.ScreenUpdating = True
+End Sub
+Sub SaveAll()
+Dim myfile As String
+Dim myname As String
+
+'slaat alle open excelbestanden op onder xlsx formaat
+myfile = ActiveWorkbook.Name
+ActiveWindow.ActivateNext
+Do While myfile <> ActiveWorkbook.Name
+    myname = ActiveWorkbook.Path & "\" & Replace(ActiveWorkbook.Name, "01bvba.xls", " 2001 1-0")
+    ActiveWorkbook.SaveAs Filename:=myname, FileFormat:=51, ConflictResolution:=3
+    ActiveWindow.ActivateNext
+Loop
+myname = ActiveWorkbook.Path & "\" & Replace(myfile, "01bvba.xls", " 2001 1-0")
+ActiveWorkbook.SaveAs Filename:=myname, FileFormat:=51, ConflictResolution:=3
+End Sub
+Sub Voorloopnul()
+'Zet een O voor het getal in de selectie (wanneer Excel geen voorloopnullen toont en je deze nodig hebt voor vergelijking, anders zijn 10 en 01 gelijk in volgorde)
+'gebruikt in onderzoek stedelijk fiscaal instrumentarium om de lijst met Nacebel-codes voor 2008 vergelijkbaar te maken
+Dim Cell As Range
+For Each Cell In Selection
+Cell.Value = "'0" & Cell.Value
+Next Cell
+End Sub
+
+Sub VlaamseNIS()
+'filter op de NIS codes van de Vlaamse gemeenten
+Worksheets(1).Range("$A$1:$Z$1").AutoFilter Field:=2, Criteria1:=Array("11001", "11002", "11004", "11005", "11007", "11008", _
+"11009", "11013", "11016", "11018", "11021", "11022", "11023", "11024", "11025", "11029", "11030", "11035", "11037", "11038", "11039", _
+"11040", "11044", "11050", "11052", "11053", "11054", "11055", "11056", "11057", "12002", "12005", "12007", "12009", "12014", "12021", _
+"12025", "12026", "12029", "12030", "12034", "12035", "12040", "13001", "13002", "13003", "13004", "13006", "13008", "13010", "13011", _
+"13012", "13013", "13014", "13016", "13017", "13019", "13021", "13023", "13025", "13029", "13031", "13035", "13036", "13037", "13040", _
+"13044", "13046", "13049", "13053", "23002", "23003", "23009", "23016", "23023", "23024", "23025", "23027", "23032", "23033", "23038", _
+"23039", "23044", "23045", "23047", "23050", "23052", "23060", "23062", "23064", "23077", "23081", "23086", "23088", "23094", "23096", _
+"23097", "23098", "23099", "23100", "23101", "23102", "23103", "23104", "23105", "24001", "24007", "24008", "24009", "24011", "24014", _
+"24016", "24020", "24028", "24033", "24038", "24041", "24043", "24045", "24048", "24054", "24055", "24059", "24062", "24066", "24086", _
+"24094", "24104", "24107", "24109", "24130", "24133", "24134", "24135", "24137", "31003", "31004", "31005", "31006", "31012", "31022", _
+"31033", "31040", "31042", "31043", "32003", "32006", "32010", "32011", "32030", "33011", "33016", "33021", "33029", "33037", "33039", _
+"33040", "33041", "34002", "34003", "34009", "34013", "34022", "34023", "34025", "34027", "34040", "34041", "34042", "34043", "35002", _
+"35005", "35006", "35011", "35013", "35014", "35029", "36006", "36007", "36008", "36010", "36011", "36012", "36015", "36019", "37002", _
+"37007", "37010", "37011", "37012", "37015", "37017", "37018", "37020", "38002", "38008", "38014", "38016", "38025", "41002", "41011", _
+"41018", "41024", "41027", "41034", "41048", "41063", "41081", "41082", "42003", "42004", "42006", "42008", "42010", "42011", "42023", _
+"42025", "42026", "42028", "43002", "43005", "43007", "43010", "43014", "43018", "44001", "44011", "44012", "44013", "44019", "44020", _
+"44021", "44029", "44034", "44036", "44040", "44043", "44045", "44048", "44049", "44052", "44064", "44072", "44073", "44080", "44081", _
+"45017", "45035", "45041", "45057", "45059", "45060", "45061", "45062", "45063", "45064", "45065", "46003", "46013", "46014", "46020", _
+"46021", "46024", "46025", "71002", "71004", "71011", "71016", "71017", "71020", "71022", "71024", "71034", "71037", "71045", "71047", _
+"71053", "71057", "71066", "71067", "71069", "71070", "72003", "72004", "72018", "72020", "72021", "72025", "72029", "72030", "72037", _
+"72038", "72039", "72040", "72041", "73001", "73006", "73009", "73022", "73028", "73032", "73040", "73042", "73066", "73083", "73098", _
+"73107", "73109"), Operator:=xlFilterValues
+End Sub
+
+Sub GemToNIS()
+
+Dim Gemeenten As Range
+Dim Cell As Range
+Dim Bronbestand As Workbook
+Dim NIScode As Worksheet
+Dim NISlijst As Range
+
+Set Bronbestand = ActiveWorkbook
+Set NIScode = Application.Workbooks("NIS codes.xlsx").Worksheets("Blad2")
+Set Gemeenten = Application.InputBox("Selecteer het bereik met de gemeentenamen", "Selectie gemeentenamen", Type:=8)
+Application.ScreenUpdating = False
+Gemeenten.Range("A1").EntireColumn.Insert
+
+For Each Cell In Gemeenten
+Opzoeken:
+    NIScode.Activate
+'    Set NISlijst = NIScode.Range(Range("B1"), Range("B1").End(xlDown))
+    
+    Cell.Offset(0, -1) = NIScode.Range(Range("B1"), Range("B1").End(xlDown)).Find(Cell.Value, LookIn:=xlValues, lookat:=xlWhole, searchorder:=xlByRows, MatchCase:=False, matchbyte:=False).Offset(0, -1).Value
+    On Error GoTo NewGemNaam
+    Bronbestand.Activate
+Next Cell
+Application.ScreenUpdating = True
+
+Exit Sub
+
+NewGemNaam:
+Cell.Copy
+NIScode.Activate
+NIScode.Range("B1").End(xlDown).Offset(1, 0).PasteSpecial
+NIScode.Activate
+Application.ScreenUpdating = True
+NIScode.Range("B1").End(xlDown).Offset(0, -1) = Application.InputBox("Wat is de NIS code van " & Cell.Value & "?" & vbCr & vbCr & "Klik op de NIS-code in de tabel om ze toe te voegen aan de lijst voor later gebruik", Type:=1)
+Application.ScreenUpdating = False
+Bronbestand.Activate
+Resume Opzoeken
+
+End Sub
+Sub aanhalingstekens()
+Dim Cell As Range
+
+For Each Cell In Selection
+Cell.Offset(0, 2) = Chr(34) & Cell & Chr(34)
+Next Cell
+
+End Sub
+Sub Jaarkopie()
+Dim Jaren As Range
+
+Set Jaren = Application.InputBox("Selecteer het bereik met de te kopiëren jaren", "Selectie jaren", Type:=8)
+Jaren.Select
+Jaren.Copy 'kopieer cellen met jaartallen
+    Do While ActiveCell.End(xlDown).Offset(1, 1) <> 0
+        ActiveCell.End(xlDown).Offset(1, 0).Select 'Ga naar eerste lege cel in zelfde kolom
+        ActiveSheet.Paste 'Plak jaartallen
+    Loop
+End Sub
+Sub tekstnaargetal()
+Dim Cell As Range
+
+For Each Cell In Selection
+Cell.Value = Replace(Cell.Value, "'", "")
+Next Cell
+Columns(1).NumberFormat = "00"
+
+End Sub
