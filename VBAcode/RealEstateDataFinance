@@ -1,0 +1,53 @@
+Option Explicit
+
+'Sub calcov()
+''berekent de oov en voegt deze toe aan het eind van de rij voor de vastgoeddata van fod financien bij het project stedelijk fiscaal instrumentarium
+'Dim Cell As Range
+'Dim Stad As Range
+'Dim lijststad As Range
+'Dim lijstprov As Range
+'Dim stadsopcentiem As Single
+'Dim stadsnaam As String
+'Dim provincie As String
+'Dim provopcentiem As Single
+'Dim geindKI As Single
+'Dim basisheffing As Single
+'Dim provoov As Single
+'Dim gemoov As Single
+'Dim ov As Single
+'
+'Set Stad = Application.InputBox("Selecteer de cellen met de stadsnamen", Type:=8)
+'Set lijststad = Workbooks("Opcentiemen.xls").Worksheets("Blad1").Range("A2:A309")
+'Set lijstprov = Workbooks("Opcentiemen.xls").Worksheets("Blad1").Range("A311:A315")
+'Application.ScreenUpdating = False
+'For Each Cell In Stad
+'    provincie = Mid(Cell.Offset(0, -1).Value, 1, 1)
+'        Select Case provincie
+'            Case 1
+'                provincie = "Provincie Antwerpen"
+'            Case 2
+'                provincie = "Provincie Vlaams-Brabant"
+'            Case 3
+'                provincie = "Provincie West-Vlaanderen"
+'            Case 4
+'                provincie = "Provincie Oost-Vlaanderen"
+'            Case 7
+'                provincie = "Provincie Limburg"
+'        End Select
+'    provopcentiem = lijstprov.Find(provincie, LookIn:=xlValues, Lookat:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False).Offset(0, 3).Value
+'    stadsnaam = Cell.Value
+'    stadsopcentiem = lijststad.Find(stadsnaam, LookIn:=xlValues, Lookat:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False).Offset(0, 3).Value
+'    geindKI = Cell.Offset(0, -29).Value * 1.579
+'    Cell.Offset(0, 1).Value = geindKI
+'    basisheffing = geindKI * 0.025
+'    Cell.Offset(0, 2).Value = basisheffing
+'    provoov = basisheffing * provopcentiem / 100
+'    Cell.Offset(0, 3).Value = provoov
+'    gemoov = basisheffing * stadsopcentiem / 100
+'    Cell.Offset(0, 4).Value = gemoov
+'    ov = basisheffing + provoov + gemoov
+'    Cell.Offset(0, 5).Value = ov
+'Next Cell
+'Application.ScreenUpdating = True
+'End Sub
+'
