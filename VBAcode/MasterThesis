@@ -1,0 +1,575 @@
+Option Explicit
+
+Sub Unzip()
+    Dim zipbestand As Variant
+    Dim Defpad As Variant
+    Dim oApp As Object
+    Dim csvbestand As String
+    Dim qualtrics As Workbook
+    Dim ondlijst As Workbook
+    
+    
+    'Open zip Qualtrics
+    Defpad = ActiveWorkbook.Path    'Definieer de basisdirectory
+    zipbestand = Dir(Defpad & "\*.zip") 'Kies het zipbestand
+    Set oApp = CreateObject("Shell.Application") 'Benader shell via object
+    oApp.Namespace(Defpad).CopyHere oApp.Namespace(zipbestand).items 'unzip bestanden naar huidige folder via shell
+    
+    'Laad csv in werkblad
+    csvbestand = Defpad & "\" & Dir(Defpad & "\*.csv")
+    Sheets.Add(After:=ActiveSheet).Name = "Qualtrics"
+    Worksheets("Qualtrics").Activate
+    
+    With ActiveSheet.QueryTables.Add(Connection:= _
+        "TEXT;" & csvbestand, Destination:=Range( _
+        "$A$1"))
+        .Name = "Masterproeven_1415"
+        .FieldNames = True
+        .RowNumbers = False
+        .FillAdjacentFormulas = False
+        .PreserveFormatting = True
+        .RefreshOnFileOpen = False
+        .RefreshStyle = xlInsertDeleteCells
+        .SavePassword = False
+        .SaveData = True
+        .AdjustColumnWidth = True
+        .RefreshPeriod = 0
+        .TextFilePromptOnRefresh = False
+        .TextFilePlatform = 65001
+        .TextFileStartRow = 1
+        .TextFileParseType = xlDelimited
+        .TextFileTextQualifier = xlTextQualifierDoubleQuote
+        .TextFileConsecutiveDelimiter = False
+        .TextFileTabDelimiter = False
+        .TextFileSemicolonDelimiter = False
+        .TextFileCommaDelimiter = True
+        .TextFileSpaceDelimiter = False
+        .TextFileColumnDataTypes = Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, _
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+        .TextFileTrailingMinusNumbers = True
+        .Refresh BackgroundQuery:=False
+    End With
+End Sub
+
+Option Explicit
+
+Option Explicit
+
+Sub VerdeelMP()
+
+Dim Defpad As Variant
+Dim Cel As Range
+Dim Promotor As String
+Dim Bron As Worksheet
+Dim Nieuwbestand As Workbook
+Dim WbMacro As Workbook
+
+Defpad = ActiveWorkbook.Path    'Definieer de basisdirectory
+
+Sheets.Add Before:=Worksheets(1), Type:=Defpad & "\studentenlijst.xlsx"  'Bestandsnaam gaat wisselen!!!!!!!!!!
+Set Bron = ActiveWorkbook.Worksheets(1) 'Het rekenblad waarin de macro loopt
+
+'sort op K1promotor22 en op K1code24 in deze volgorde
+Columns("A:AN").Sort key1:=Columns(22), order1:=xlAscending, key2:=Columns(24), order2:=xlAscending, Header:=xlYes, MatchCase:=False
+'herhaal tot cel leeg is
+For Each Cel In Range("V2", Range("V2").End(xlDown))
+    If Cel <> Cel.Offset(1, 0) Then
+        Promotor = Cel.Value
+        Bron.Range("$A$1:$AN$1").AutoFilter Field:=22, Criteria1:=Promotor
+        Set Nieuwbestand = Workbooks.Add
+        Bron.Cells.SpecialCells(xlCellTypeVisible).Copy
+        Nieuwbestand.Worksheets(1).Range("A1").PasteSpecial (xlPasteValues)
+        Nieuwbestand.Worksheets(1).Range("A:H,J:K,U:V,Y:AN").EntireColumn.Hidden = True
+        Nieuwbestand.Worksheets(1).Columns("I").NumberFormat = "mm-dd-yyyy hh:mm"
+        Nieuwbestand.SaveAs Filename:=Defpad & "/" & Promotor & ".xlsx"
+        Nieuwbestand.Close
+        Bron.Range("$A$1:$AN$1").AutoFilter
+    End If
+Next Cel
+
+Application.DisplayAlerts = False
+    Sheets(1).Delete
+Application.DisplayAlerts = True
+
+MsgBox "De macro werd uitgevoerd. Je vindt de bestanden per promotor terug in " & Defpad, vbInformation
+
+End Sub
+
+
+
+Sub AutoToewijzing()
+
+Dim Defpad As String
+Dim DefWb As Workbook
+Dim Keuze As Worksheet
+Dim OndWb As Workbook
+Dim PerProm As Worksheet
+Dim Cel As Range
+Dim Eerste As Range
+Dim DuoMP As Worksheet
+Dim AantStud As Double
+Dim KeuzeCode As String
+Dim Prom As Range
+Dim Rest As Range
+Dim PromRest As Worksheet
+Dim Student As Range
+Dim Partner As Range
+Dim SelProm As Range
+Dim Wachtlijst As Double
+Dim PlaatsKeuze As Double
+Dim Promotor As String
+Dim Nieuwbestand As Workbook
+Dim Wachtend As Range
+Dim StudNrPart As String
+Dim StatTel As Double
+Dim Verloop As Double
+Dim oldStatusBar As Boolean
+Dim i As Integer
+Dim Stoplijst As Double
+Dim Resterende As Range
+Dim StudNr As String
+
+'On Error GoTo CleanExit
+oldStatusBar = Application.DisplayStatusBar
+Application.DisplayStatusBar = True
+Application.ScreenUpdating = False
+Application.Calculation = xlCalculationManual
+
+Defpad = ActiveWorkbook.Path    'Definieer de basisdirectory
+Set DefWb = ActiveWorkbook
+
+'Rekenbladen uit bestanden halen en in het bestand van de macro steken om niet steeds te moeten switchen tussen workbooks
+'In principe is er maar een gedeelte van de informatie in die bestanden nodig, dus zou je de betreffende kolommen uit de geordende lijst in een array (of enkele array variabelen) moeten kunnen stoppen voor de bewerkingen op uit te voeren
+
+Sheets.Add Before:=DefWb.Worksheets(1), Type:=Defpad & "\studentenlijst.xlsx"  'Bestandsnaam gaat wisselen!!!!!!!!!!
+Set Keuze = DefWb.Worksheets(1) 'Het rekenblad waarin de keuzes van de studenten staan
+Application.Workbooks.Open Filename:=Defpad & "\onderwerpenlijst.xlsx", UpdateLinks:=False
+Set OndWb = Workbooks("onderwerpenlijst.xlsx") 'Het rekenblad waarin de onderwerpen van de promotors staan
+OndWb.Sheets(1).Copy After:=DefWb.Sheets(1)
+OndWb.Close
+Set PerProm = DefWb.Worksheets(2) 'Het rekenblad met de onderwerpen per promotor
+PerProm.Columns(2).NumberFormat = "0"
+
+'sort op einddatum keuze student (Vroegste eerst)
+Keuze.Activate
+Keuze.Columns("A:AN").Sort key1:=Columns(9), order1:=xlAscending, Header:=xlYes, MatchCase:=False
+'sort op personeelsnummer en op totaal aantal en op onderwerpcode in deze volgorde
+PerProm.Activate
+PerProm.Columns(5).SpecialCells(xlCellTypeBlanks) = -1
+PerProm.Columns("A:K").Sort key1:=Columns(2), order1:=xlAscending, key2:=Columns(5), order2:=xlAscending, key3:=Columns(6), order3:=xlAscending, Header:=xlYes, MatchCase:=False
+'Bereken het totaal aantal te begeleiden masterproeven op basis van de aantallen per keuze
+
+Set Eerste = Range("I2")
+For Each Cel In Range("B2", Range("B2").End(xlDown))
+    
+    If Cel <> Cel.Offset(1, 0) Then
+        
+        If Cel.Offset(0, 3) = -1 Then
+        
+            Cel.Offset(0, 3) = Application.WorksheetFunction.Sum(Range(Eerste, Cel.Offset(0, 7)))
+        
+        End If
+        
+        Set Eerste = Cel.Offset(1, 7)
+    
+    End If
+
+Next Cel
+
+'sort nogmaals op personeelsnummer en op totaal aantal en op onderwerpcode in deze volgorde, zodat alles zeker in volgorde staat
+PerProm.Columns("A:K").Sort key1:=Columns(2), order1:=xlAscending, key2:=Columns(5), order2:=xlAscending, key3:=Columns(6), order3:=xlAscending, Header:=xlYes, MatchCase:=False
+PerProm.Columns(5).Replace What:=-1, Replacement:="", LookAt:=xlWhole
+'tabblad maken met het aantal resterende masterproeven per promotor (zou beter in array zitten, zie ook volgende codeblok)
+
+Set PromRest = Worksheets.Add(After:=Sheets(2))
+PromRest.Name = "PromRest"
+PerProm.Range("A:K").AutoFilter Field:=5, Criteria1:="<>"
+PerProm.Cells.SpecialCells(xlCellTypeVisible).Copy
+PromRest.Range("A1").PasteSpecial (xlPasteValues)
+PromRest.Columns(2).NumberFormat = "0"
+PerProm.Range("A:K").AutoFilter
+
+'tabblad maken voor de duo masterproeven
+Set DuoMP = Worksheets.Add(After:=Sheets(3))
+DuoMP.Name = "DuoMP"
+DuoMP.Range("A1") = "Keuze"
+DuoMP.Range("B1") = "Stamnummer"
+Wachtlijst = 1 'nog geen studenten op de wachtlijst voor er gezocht wordt
+i = 1
+
+Keuze.Activate
+Keuze.Range("AO1") = "Toegewezen onderwerp"
+Keuze.Range("AP1") = "Promotor"
+
+
+'Controleren of er geen ontbrekende stamnummers zijn: de laatste rij van de ID kolom moet dezelfde zijn als die van de kolom stamnummer
+If Keuze.Range("A2").End(xlDown).Row = Keuze.Range("L2").End(xlDown).Row Then
+
+'Keuze student
+    
+    For Each Student In Keuze.Range("L2", Range("L2").End(xlDown))
+        
+        AantStud = 1 'In principe is er slechts 1 student die de masterproef doet. De code hierna checkt voor duo masterproeven
+        PlaatsKeuze = 12
+        Keuze.Range("AR2") = Verloop + StatTel + 1 'voor foutcontrole
+        Keuze.Range("AS2") = KeuzeCode 'voor foutcontrole
+        
+        If Student.Offset(0, 30) = "" Then 'Enkel studenten die nog geen keuze hebben
+            
+            Student.Offset(0, 30) = "Geen masterproef"
+            
+            Select Case Student.Offset(0, 5).Value
+                    
+            Case "Ik zal een onderwerp kiezen waarvoor in duo kan gewerkt worden. Ik heb zelfs al een partner gevonden."
+            
+                AantStud = 2 'Er moeten al 2 personen van de promotor worden afgetrokken, zodat de plaats bezet is. Dat kan door het aantal studenten hier te veranderen en de aftrek variabel te maken (zoals ook bij het nagaan van de beschikbare aantallen)
+                
+                Do While PlaatsKeuze < 25 'Keuze 5 staat op offset 24 kolommen, dus als deze waarde hoger is, dan zijn alle keuzes uitgeput
+                    
+                    KeuzeCode = Student.Offset(0, PlaatsKeuze).Value 'lees code keuze student in
+                    If KeuzeCode <> "" Then 'student heeft geen keuze doorgegeven
+'''''''''''''Matchen promotor met keuze en aantal resterende MP's zou eigenlijk beter via array gaan voor snelheid en stabiliteit
+                        PerProm.Activate
+                        'Opvangen problemen van onderwerp/keuzecode niet gevonden
+                        Set Prom = PerProm.Range("F2", Range("F2").End(xlDown)).Find(KeuzeCode, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False)
+                        If Not Prom Is Nothing Then
+                            Set Prom = Prom.Offset(0, -4) 'Personeelsnummer promotor van die keuze
+                        Else
+                            Student.EntireRow.Interior.Color = vbRed
+                            MsgBox "Keuzecode " & KeuzeCode & " van student " & Student.Offset(0, 1) & " " & Student.Offset(0, 2) & " met stamnummer " & Student & " werd niet gevonden in de lijst met onderwerpen. Neem de gegevens over van deze melding en pas aan in het originele bestand."
+                            GoTo Stoppen
+                        End If
+                        PromRest.Activate
+                        Set Rest = PromRest.Range("B2", Range("B2").End(xlDown)).Find(Prom, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False).Offset(0, 3) 'Totaal aantal resterende masterproeven voor de betreffende promotor
+                        If Rest > (AantStud - 1) And Rest <> 0 Then 'ga na of promotor nog MP kan begeleiden
+                            
+                            If Prom.Offset(0, 7) > (AantStud - 1) And Prom.Offset(0, 7) <> 0 Then 'als er voldoende plaatsen resteren voor het onderwerp: aantallen aanpassen en gegevens aan student koppelen
+                                Student.Offset(0, 29) = KeuzeCode 'toegekende masterproefcode achter keuze student
+                                Student.Offset(0, 30) = Prom.Offset(0, 1).Value 'promotor van de masterproefcode om nadien op te filteren
+                                Prom.Offset(0, 7) = Prom.Offset(0, 7) - AantStud '1 plaats voor dat onderwerp ingevuld
+                                Rest = Rest - AantStud '1 plaats minder beschikbaar bij die promotor
+                                Exit Do
+                            End If
+            
+                        End If
+                        
+                        PlaatsKeuze = PlaatsKeuze + 3
+                    
+                    Else
+                        Exit Do
+                    End If
+                
+                Loop
+                            
+                If Student.Offset(0, 30) <> "Geen masterproef" Then 'Enkel bij een geldige toewijzing de partner vastleggen
+                    Set Partner = Nothing
+                    Keuze.Activate
+                    Set Partner = Keuze.Range("L2", Range("L2").End(xlDown)).Find(Student.Offset(0, 7).Value, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False)
+                    If Not Partner Is Nothing Then
+                        Partner.Offset(0, 29) = KeuzeCode
+                        Partner.Offset(0, 30) = Prom.Offset(0, 1).Value
+                    Else
+                        Student.EntireRow.Interior.Color = vbRed
+'                        MsgBox "Opgegeven partner voor " & Student.Offset(0, 1) & " " & Student.Offset(0, 2) & " (" & Student & ")" & " niet gevonden in de lijst. Kijk dit na en laat de macro opnieuw lopen.", vbCritical
+'                        GoTo Stoppen
+                    End If
+                Else
+                    Set Partner = Nothing
+                    Keuze.Activate
+                    Set Partner = Keuze.Range("L2", Range("L2").End(xlDown)).Find(Student.Offset(0, 7).Value, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False)
+                    If Not Partner Is Nothing Then
+                        Partner.Offset(0, 30) = "Geen masterproef"
+                    Else
+                        Student.EntireRow.Interior.Color = vbRed
+'                        MsgBox "Opgegeven partner voor " & Student.Offset(0, 1) & " " & Student.Offset(0, 2) & " (" & Student & ")" & " niet gevonden in de lijst. Kijk dit na en laat de macro opnieuw lopen.", vbCritical
+'                        GoTo Stoppen
+                    End If
+                End If
+                
+            Case "Ik zal een onderwerp kiezen waarvoor in duo kan gewerkt worden. Ik heb nog geen partner en er mag mij iemand willekeurig toegewezen worden."
+              
+                '2 mogelijkheden; ofwel is de student de eerste die dit kiest en komt hij op een wachtlijst; ofwel is hij de tweede en kunnen beide studenten de keuze toegewezen krijgen
+                'Duo masterproeven zijn verplicht of optioneel.
+                'Als ze optioneel zijn, kunnen ze verwerkt worden als een solo masterproef. De promotoren kunnen dan zelf duo's samenstellen, tenzij de student zelf een partner opgaf, maar dat is niet in deze case.
+                'Als ze verplicht zijn, komt de eerste student op een wachtlijst terecht, tot er een tweede gevonden wordt.
+DuoZoek:
+                Do While PlaatsKeuze < 25 'Keuze 5 staat op offset 24 kolommen, dus als deze waarde hoger is, dan zijn alle keuzes uitgeput
+                    
+                    KeuzeCode = Student.Offset(0, PlaatsKeuze).Value 'lees code keuze student in
+                    If KeuzeCode <> "" Then 'student heeft een keuze doorgegeven
+'''''''''''''Matchen promotor met keuze en aantal resterende MP's zou eigenlijk beter via array gaan voor snelheid en stabiliteit
+                        PerProm.Activate
+                        Set Prom = PerProm.Range("F2", Range("F2").End(xlDown)).Find(KeuzeCode, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False)
+                        If Not Prom Is Nothing Then
+                            Set Prom = Prom.Offset(0, -4) 'Personeelsnummer promotor van die keuze
+                        Else
+                            Student.EntireRow.Interior.Color = vbRed
+                            MsgBox "Keuzecode " & KeuzeCode & " van student " & Student.Offset(0, 1) & " " & Student.Offset(0, 2) & " met stamnummer " & Student & " werd niet gevonden in de lijst met onderwerpen. Neem de gegevens over van deze melding en pas aan in het originele bestand."
+                            GoTo Stoppen
+                        End If
+                        PromRest.Activate
+                        Set Rest = PromRest.Range("B2", Range("B2").End(xlDown)).Find(Prom, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False).Offset(0, 3) 'Totaal aantal resterende masterproeven voor de betreffende promotor
+                                        
+                        If Rest > (AantStud - 1) And Rest <> 0 Then 'ga na of promotor nog MP kan begeleiden
+                            
+                            If Prom.Offset(0, 7) > (AantStud - 1) And Prom.Offset(0, 7) <> 0 Then
+                                Exit Do 'het wegschrijven van de keuze hangt van het soort masterproef af (zie verderop)
+                            End If
+                        
+                        End If
+                        
+                        PlaatsKeuze = PlaatsKeuze + 3
+                    
+                    Else
+                        Exit Do
+                    End If
+                    
+                Loop
+                            
+                If KeuzeCode <> "" And Prom.Offset(0, 7) <> 0 And Rest <> 0 Then 'Niet verplichte duo masterproeven zijn zoals een solo, wel verplichte duo's kunnen pas toegewezen worden als er een partner is
+                    If Prom.Offset(0, 8) <> "Verplicht" Then
+                        Student.Offset(0, 29) = KeuzeCode 'toegekende masterproefcode achter keuze student
+                        Student.Offset(0, 30) = Prom.Offset(0, 1).Value 'promotor van de masterproefcode om nadien op te filteren
+                    Else 'Check wachtlijst
+                        'Zoeken in de wachtlijst of er al een mogelijke partner is
+                        Set Wachtend = Nothing
+                        DuoMP.Activate
+                        Set Wachtend = DuoMP.Range("A1", Range("A1").Offset(Wachtlijst, 0)).Find(KeuzeCode, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False) 'Code zoeken in wachtlijst
+                        If Wachtend Is Nothing Then 'code niet gevonden, dus geen partner momenteel
+                            DuoMP.Range("A1").Offset(Wachtlijst, 0) = KeuzeCode
+                            DuoMP.Range("B1").Offset(Wachtlijst, 0) = Student
+                            Wachtlijst = Wachtlijst + 1
+                        Else
+                            StudNrPart = Wachtend.Offset(0, 1)
+                            Wachtend = "" 'Vermelding uit de wachtlijst halen
+                            Wachtend.Offset(0, 1) = ""
+                            Keuze.Activate
+                            Student.Offset(0, 29) = KeuzeCode 'toegekende masterproefcode achter keuze student
+                            Student.Offset(0, 30) = Prom.Offset(0, 1).Value 'promotor van de masterproefcode om nadien op te filteren
+                            Set Partner = Keuze.Range("L2", Range("L2").End(xlDown)).Find(StudNrPart, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False)
+                            Partner.Offset(0, 29) = KeuzeCode
+                            Partner.Offset(0, 30) = Prom.Offset(0, 1).Value
+                            'partner moet aantallen voor promotor niet verminderen, want dat is al gebeurd toen hij zijn keuze doorgaf
+                        End If
+                    End If
+                
+                    Prom.Offset(0, 7) = Prom.Offset(0, 7) - AantStud '1 plaats voor dat onderwerp ingevuld
+                    Rest = Rest - AantStud '1 plaats minder beschikbaar bij die promotor
+                End If
+                
+                If StudNr <> "" Then 'Volgende iteraties voor studenten op de wachtlijst aan het einde van deze code
+                
+                    GoTo GnMP 'terug naar afwerken wachtlijst
+                
+                End If
+            
+            Case Else
+                
+                Do While PlaatsKeuze < 25 'Keuze 5 staat op offset 24 kolommen, dus als deze waarde hoger is, dan zijn alle keuzes uitgeput
+                    
+                    KeuzeCode = Student.Offset(0, PlaatsKeuze).Value 'lees code keuze student in
+                    If KeuzeCode <> "" Then 'student heeft geen keuze doorgegeven
+'''''''''''''Matchen promotor met keuze en aantal resterende MP's zou eigenlijk beter via array gaan voor snelheid en stabiliteit
+                        PerProm.Activate
+                        Set Prom = PerProm.Range("F2", Range("F2").End(xlDown)).Find(KeuzeCode, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False)
+                        If Not Prom Is Nothing Then
+                            Set Prom = Prom.Offset(0, -4) 'Personeelsnummer promotor van die keuze
+                        Else
+                            Student.EntireRow.Interior.Color = vbRed
+                            MsgBox "Keuzecode " & KeuzeCode & " van student " & Student.Offset(0, 1) & " " & Student.Offset(0, 2) & " met stamnummer " & Student & " werd niet gevonden in de lijst met onderwerpen. Neem de gegevens over van deze melding en pas aan in het originele bestand."
+                            GoTo Stoppen
+                        End If
+                        PromRest.Activate
+                        Set Rest = PromRest.Range("B2", Range("B2").End(xlDown)).Find(Prom, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False).Offset(0, 3) 'Totaal aantal resterende masterproeven voor de betreffende promotor
+                        If Prom.Offset(0, 8) <> "Verplicht" Then 'als het een onderwerp een verplichte duomasterproef betreft moet een andere keuze gemaakt worden als de student aangeeft solo te willen werken
+                            If Rest > (AantStud - 1) And Rest <> 0 Then 'ga na of promotor nog MP kan begeleiden
+                                
+                                If Prom.Offset(0, 7) > (AantStud - 1) And Prom.Offset(0, 7) <> 0 Then 'als er voldoende plaatsen resteren voor het onderwerp: aantallen aanpassen en gegevens aan student koppelen
+                                    Student.Offset(0, 29) = KeuzeCode 'toegekende masterproefcode achter keuze student
+                                    Student.Offset(0, 30) = Prom.Offset(0, 1).Value 'promotor van de masterproefcode om nadien op te filteren
+                                    Prom.Offset(0, 7) = Prom.Offset(0, 7) - AantStud '1 plaats voor dat onderwerp ingevuld
+                                    Rest = Rest - AantStud '1 plaats minder beschikbaar bij die promotor
+                                    Exit Do
+                                End If
+                
+                            End If
+                        End If
+                        
+                        PlaatsKeuze = PlaatsKeuze + 3
+                    
+                    Else
+                        Exit Do
+                    End If
+                
+                Loop
+            
+            End Select
+        
+        End If
+'feedback aan gebruiker over het verloop van de macro
+    StatTel = StatTel + 1
+    If StatTel = 10 Then
+        Verloop = Verloop + StatTel
+        Application.StatusBar = "Al " & Verloop & " studenten verwerkt."
+        StatTel = 0
+    End If
+    
+    Next Student
+
+'Studenten op de wachtlijst afhandelen
+    AantStud = 1
+   
+    For i = 1 To 4 'voor de resterende 4 wachtlijsten masterproeven zoeken
+    
+        DuoMP.Activate
+''''''''''''''''''''''''''''''''''''''''''''''Opvangen count=0
+        If WorksheetFunction.CountA(Range("B2", Range("B1").Offset(Wachtlijst, 0))) >= 1 Then 'Ga na of er nog mensen op de wachtlijst staan
+        Stoplijst = Wachtlijst - 1 'Studenten die in een volgende keuze opnieuw op de wachtlijst komen, worden pas in een volgende iteratie opgenomen, door de begrenzing van Stoplijst. Anders blijf je keuzes oneindig keuzes itereren.
+            For Each Resterende In DuoMP.Range("B2", Range("B1").Offset(Stoplijst, 0)) 'Voor elke student op de wachtlijst
+                If Resterende <> "" Then 'student die een partner vonden werden uit de lijst gewist, dus er zijn lege cellen in de lijst
+                    PlaatsKeuze = 12 + 3 * i 'Starten met zoeken bij keuze 2 tot keuze 5 op offset 24
+                    StudNr = Resterende
+                    KeuzeCode = Resterende.Offset(0, -1)
+                    PerProm.Activate
+                    Set Prom = PerProm.Range("F2", Range("F2").End(xlDown)).Find(KeuzeCode, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False)
+                    If Not Prom Is Nothing Then
+                        Set Prom = Prom.Offset(0, -4) 'Personeelsnummer promotor van die keuze
+                    Else
+                        Student.EntireRow.Interior.Color = vbRed
+                        MsgBox "Keuzecode " & KeuzeCode & " van student " & Student.Offset(0, 1) & " " & Student.Offset(0, 2) & " met stamnummer " & Student & " werd niet gevonden in de lijst met onderwerpen. Neem de gegevens over van deze melding en pas aan in het originele bestand."
+                        GoTo Stoppen
+                    End If
+                    PromRest.Activate
+                    Set Rest = PromRest.Range("B2", Range("B2").End(xlDown)).Find(Prom, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False).Offset(0, 3) 'Totaal aantal resterende masterproeven voor de betreffende promotor
+                    Rest = Rest + 1 'onderwerp terug vrijgeven
+                    Prom.Offset(0, 7) = Prom.Offset(0, 7) + 1
+                    DuoMP.Activate
+                    DuoMP.Range(Resterende, Resterende.Offset(0, -1)).Clear 'wis de gegevens van de student, zodat hij zichzelf niet vindt in de lijst
+                    Keuze.Activate
+                    Set Student = Keuze.Range("L2", Range("L2").End(xlDown)).Find(StudNr, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False)
+                    GoTo DuoZoek 'case partner toewijzen laten lopen voor deze student. Aan het eind stuurt die terug naar hier
+GnMP:
+                End If
+            Next Resterende
+        End If
+    Next i
+
+Else
+    MsgBox "Er zijn ontbrekende studentennummers in de studentenlijst. Verwijder die rijen of vul het studentennummer aan en laat de macro opnieuw lopen.", vbCritical
+End If
+
+'Overzichtsbestand wegschrijven van de bewerkte tabbladen
+Set Nieuwbestand = Workbooks.Add
+DefWb.Sheets(1).Copy Before:=Nieuwbestand.Sheets(1)
+Nieuwbestand.SaveAs Filename:=Defpad & "/Alle_toegewezen_masterproefstudenten.xlsx"
+Nieuwbestand.Close
+Set Nieuwbestand = Workbooks.Add
+DefWb.Sheets(2).Copy Before:=Nieuwbestand.Sheets(1)
+Nieuwbestand.SaveAs Filename:=Defpad & "/Resterende_aantallen_per_onderwerp.xlsx"
+Nieuwbestand.Close
+Set Nieuwbestand = Workbooks.Add
+DefWb.Sheets(3).Copy Before:=Nieuwbestand.Sheets(1)
+Nieuwbestand.SaveAs Filename:=Defpad & "/Resterende_aantallen_per_promotor.xlsx"
+Nieuwbestand.Close
+'Keuzes wegschrijven per promotor.
+Application.StatusBar = "Bestanden per promotor aanmaken. Nog even wachten."
+'sort op toegewezen promotor om aaneengesloten range te kunnen kopiëren naar bestand
+Keuze.Activate
+Keuze.Columns("A:AP").Sort key1:=Columns(42), order1:=xlAscending, Header:=xlYes, MatchCase:=False
+'voor elke promotor wordt een bestand gemaakt met daarin de gegevens van de toegewezen studenten.
+For Each SelProm In Range("AP2", Range("AP2").End(xlDown))
+    If SelProm <> SelProm.Offset(1, 0) Then
+        Promotor = SelProm.Value
+        Keuze.Range("$A$1:$AP$1").AutoFilter Field:=42, Criteria1:=Promotor
+        Set Nieuwbestand = Workbooks.Add
+        Keuze.Cells.SpecialCells(xlCellTypeVisible).Copy
+        Nieuwbestand.Worksheets(1).Range("A1").PasteSpecial (xlPasteValues)
+        Nieuwbestand.Worksheets(1).Range("A:H,J:K,U:AN").EntireColumn.Hidden = True
+        Nieuwbestand.Worksheets(1).Columns("I").NumberFormat = "mm-dd-yyyy hh:mm"
+        Nieuwbestand.SaveAs Filename:=Defpad & "/" & Promotor & "_toegewezen_masterproefstudenten.xlsx"
+        Nieuwbestand.Close
+        Keuze.Range("$A$1:$AP$1").AutoFilter
+    End If
+Next SelProm
+
+GoTo Stoppen
+
+CleanExit:
+MsgBox "Er is een fout opgetreden. Gelukkig bestaan er meer oplossingen dan fouten. Kijk eerst nog eens na of er niets schort aan de gebruikte bestanden en vraag, indien nodig, hulp.", vbCritical
+
+Stoppen:
+Application.DisplayAlerts = False
+    Sheets(4).Delete
+    Sheets(3).Delete
+    Sheets(2).Delete
+    Sheets(1).Delete
+Application.DisplayAlerts = True
+On Error GoTo 0
+Application.ScreenUpdating = True
+Application.StatusBar = False
+Application.DisplayStatusBar = oldStatusBar
+Application.Calculation = xlCalculationAutomatic
+
+End Sub
+Sub OntbrekendePartner()
+
+Dim Defpad As String
+Dim DefWb As Workbook
+Dim Keuze As Worksheet
+Dim Student As Range
+Dim Partner As Range
+Dim Nieuwbestand As Workbook
+
+On Error GoTo CleanExit
+Application.ScreenUpdating = False
+Application.Calculation = xlCalculationManual
+
+Defpad = ActiveWorkbook.Path    'Definieer de basisdirectory
+Set DefWb = ActiveWorkbook
+
+Sheets.Add Before:=DefWb.Worksheets(1), Type:=Defpad & "\studentenlijst.xlsx"
+Set Keuze = DefWb.Worksheets(1) 'Het rekenblad waarin de keuzes van de studenten staan
+
+If Keuze.Range("A2").End(xlDown).Row = Keuze.Range("L2").End(xlDown).Row Then
+    
+    For Each Student In Keuze.Range("L2", Range("L2").End(xlDown))
+    
+        If Student.Offset(0, 5) = "Ik zal een onderwerp kiezen waarvoor in duo kan gewerkt worden. Ik heb zelfs al een partner gevonden." Then
+
+            Set Partner = Nothing
+            Keuze.Activate
+            Set Partner = Keuze.Range("L2", Range("L2").End(xlDown)).Find(Student.Offset(0, 7).Value, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, matchbyte:=False)
+            If Partner Is Nothing Then
+                Student.EntireRow.Interior.Color = vbRed
+            End If
+        
+        End If
+    
+    Next Student
+
+Else
+    MsgBox "Er zijn ontbrekende studentennummers in de studentenlijst. Verwijder die rijen of vul het studentennummer aan en laat de macro opnieuw lopen.", vbCritical
+End If
+
+Set Nieuwbestand = Workbooks.Add
+DefWb.Sheets(1).Copy Before:=Nieuwbestand.Sheets(1)
+Application.DisplayAlerts = False
+Nieuwbestand.SaveAs Filename:=Defpad & "/Ontbrekende partner.xlsx", ConflictResolution:=xlLocalSessionChanges 'Als het bestand bestaat, gewoon overschrijven
+Nieuwbestand.Close
+Application.DisplayAlerts = True
+
+GoTo Stoppen
+
+CleanExit:
+MsgBox "Er is een fout opgetreden. Gelukkig bestaan er meer oplossingen dan fouten. Kijk eerst nog eens na of er niets schort aan de gebruikte bestanden en vraag, indien nodig, hulp.", vbCritical
+
+Stoppen:
+Application.DisplayAlerts = False
+    DefWb.Sheets(1).Delete
+Application.DisplayAlerts = True
+On Error GoTo 0
+Application.ScreenUpdating = True
+Application.Calculation = xlCalculationAutomatic
+
+End Sub
+
