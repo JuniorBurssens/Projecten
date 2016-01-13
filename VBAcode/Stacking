@@ -14,18 +14,28 @@ Sub Stacken()
 End Sub
 Sub Namenstack()
 '
-' Selecteer de eerste te verplaatsen NISCode/stadsnaam
-'
 
+Dim Begin As Range
+Dim Stack As Long
+Dim Hoeveelheid As Long
+Dim Kolommen As Long
+Dim i As Long
 '
-
-    Range(Selection, Selection.End(xlDown)).Select
-    Selection.Cut
-    ActiveCell.Offset(10, 0).Select
-    ActiveSheet.Paste
-    ActiveCell.Offset(-11, 0).Select
-    Selection.AutoFill Destination:=Range(ActiveCell, ActiveCell.Offset(10, 0)), Type:=xlFillDefault
-    ActiveCell.Offset(12, 0).Select
+Set Begin = Application.InputBox("Selecteer de eerste cel om te stacken", "Selectie", Type:=8)
+Stack = Application.InputBox("Hoeveel keer moet de waarde herhaald worden?", "Selectie", Type:=1)
+Hoeveelheid = Range(Begin, Begin.End(xlDown)).Rows.Count
+Kolommen = Range(Begin, Begin.End(xlToRight)).Columns.Count
+    
+For i = 1 To Hoeveelheid
+    Range(Begin.Offset(1, 0), Begin.SpecialCells(xlLastCell)).Copy
+    Begin.Offset(Stack, 0).PasteSpecial 'Paste:=xlPasteValues, Operation:=xlNone
+    'uitvullen, dus reeks vervolledigen
+    Range(Begin, Begin.Offset(0, Kolommen - 1)).AutoFill Destination:=Range(Begin, Begin.Offset(Stack - 1, Kolommen - 1)), Type:=xlFillDefault 'dit gaat de rijen uitvullen, let op, hierdoor worden reeksen vervolledigd
+    'kopiëren, dus exact dezelfde waarden.
+    Range(Begin, Begin.Offset(0, Kolommen - 2)).Copy 'Hier is de laatste kolom niet gekopieerd, omdat ze moet uitgevuld worden. Als alle kolommen moeten gekopieerd worden, dan is het -1
+    Range(Begin.Offset(1, 0), Begin.Offset(Stack - 1, Kolommen - 2)).PasteSpecial
+    Set Begin = Begin.Offset(Stack, 0)
+Next i
 End Sub
 
 Sub Jaarplak()
