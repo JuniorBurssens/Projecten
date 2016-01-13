@@ -92,7 +92,7 @@ Opzoeken:
     NIScode.Activate
 '    Set NISlijst = NIScode.Range(Range("B1"), Range("B1").End(xlDown))
     
-    Cell.Offset(0, -1) = NIScode.Range(Range("B1"), Range("B1").End(xlDown)).Find(Cell.Value, LookIn:=xlValues, lookat:=xlWhole, searchorder:=xlByRows, MatchCase:=False, matchbyte:=False).Offset(0, -1).Value
+    Cell.Offset(0, -1) = NIScode.Range(Range("B1"), Range("B1").End(xlDown)).Find(Cell.Value, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, MatchCase:=False, matchbyte:=False).Offset(0, -1).Value
     On Error GoTo NewGemNaam
     Bronbestand.Activate
 Next Cell
@@ -140,3 +140,16 @@ Next Cell
 Columns(1).NumberFormat = "00"
 
 End Sub
+
+Sub BreakAllLinks()
+    Dim aLinks As Variant
+    Dim i As Long
+     'Creates array of all links in workbook
+    aLinks = ActiveWorkbook.LinkSources(xlExcelLinks)
+    If Not IsEmpty(aLinks) Then
+        For i = 1 To UBound(aLinks)
+            ActiveWorkbook.BreakLink aLinks(i), xlLinkTypeExcelLinks
+        Next i
+    End If
+End Sub
+
