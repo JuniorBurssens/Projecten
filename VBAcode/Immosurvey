@@ -1,17 +1,41 @@
 Option Explicit
 
-Sub rapport()
+Sub Rapport()
 
+Dim Immosurvey As Workbook
+Dim Makelaar As String
 Dim Aantal As Long
 Dim Ontbrekend As Long
 'Dim Cell As Range
 Dim GemVr1 As Double
-Dim Grafiekdata As Range
+Dim GrfkdataVr2 As Range
+Dim GrfkdataVr3 As Range
+Dim GrfkdataVr4 As Range
+Dim GrfkdataVr5 As Range
+Dim Smiley As String
+'voor word
+Dim Wd As Word.Application
+Dim Rapport As Word.Document
+Dim i As Long
+Dim PercNt As Double
+Dim AltGroot As Long
+Dim AltMak As String
+Dim Cell As Range
+Dim PercDezMak As Double
+Dim PercJaTaart As Double
+Dim PercJaVr3 As Double
+Dim Vr4Groot As Long
+Dim Vr4Max As String
+Dim Vr5Groot As Long
+Dim Vr5Max As String
 
+Set Immosurvey = ActiveWorkbook
+Makelaar = "Fictieve Makelaar"
 ActiveSheet.Range("A1", "MP1").AutoFilter Field:=334, Criteria1:="1" 'filter rijen met gegevens voor makelaarsblok
 ActiveSheet.AutoFilter.Range.SpecialCells(xlCellTypeVisible).Copy 'kopieer de gegevens
 Sheets.Add After:=Sheets(1)
-ActiveWorkbook.Sheets(2).Select 'Activeer het tweede rekenblad voor plakken
+ActiveWorkbook.Sheets(2).Activate 'Activeer het tweede rekenblad voor plakken
+ActiveSheet.Name = "Gegevens"
 Range("A1").PasteSpecial 'plak de gegevens
 Aantal = Range("LV2", Range("LV1").End(xlDown)).Rows.Count 'Aantal observaties
 'Vraag 1 berekenen
@@ -24,54 +48,261 @@ Aantal = Range("LV2", Range("LV1").End(xlDown)).Rows.Count 'Aantal observaties
     Range("LX1").Offset(Aantal + 1) = WorksheetFunction.CountIf(Range("LX2", Range("LX1").Offset(Aantal - 1)), "Ja") 'aantal ja
     Range("LX1").Offset(Aantal + 2) = WorksheetFunction.CountIf(Range("LX2", Range("LX1").Offset(Aantal - 1)), "Neen") 'aantal Neen
     Range("LX1").Offset(Aantal + 3) = WorksheetFunction.CountIf(Range("LX2", Range("LX1").Offset(Aantal - 1)), -99) 'aantal missing
-    Range("LX1").Offset(Aantal + 1, -1) = "Ja"
-    Range("LX1").Offset(Aantal + 2, -1) = "Neen"
-    Range("LX1").Offset(Aantal + 3, -1) = "Ontbrekend"
-    Set Grafiekdata = ActiveWorkbook.Worksheets(2).Range(Range("LX1").Offset(Aantal + 1), Range("LX1").Offset(Aantal + 3, -1))
+    Range("LX1").Offset(Aantal + 1, -1) = "Ja" 'Categorie voor legende
+    Range("LX1").Offset(Aantal + 2, -1) = "Neen" 'Categorie voor legende
+    Range("LX1").Offset(Aantal + 3, -1) = "Geen antwoord" 'Categorie voor legende
+    Set GrfkdataVr2 = ActiveWorkbook.Worksheets("Gegevens").Range(Range("LX1").Offset(Aantal + 1), Range("LX1").Offset(Aantal + 3, -1)) 'range definiëren, want offset werkt niet in .setsourcedata
     Charts.Add 'voeg taartgrafiek toe
-    With ActiveChart
-        .Name = "taartgrafiek"
-        .ChartType = xlPie
-        .SetSourceData Source:=Grafiekdata, PlotBy:=xlColumns
-        .ApplyDataLabels (xlDataLabelsShowPercent)
-        .ChartStyle = 26
-        .CopyPicture 'kopieer de taartgrafiek
+    With ActiveChart 'kenmerken taartgrafiek
+        .Name = "taartgrafiek" 'naam om te kunnen verwijzen naar deze grafiek
+        .ChartType = xlPie 'type vlakke taart
+        .SetSourceData Source:=GrfkdataVr2, PlotBy:=xlColumns 'data, zowel categorieën als gegevens
+        .ApplyDataLabels (xlDataLabelsShowPercent) 'percentages in de delen van de taart
+        .ChartStyle = 26 'opmaak van de grafiek volgens stijl nummer 26
+        .Legend.Font.Size = 18 'lettergrootte legende
+        .Legend.Font.Name = "Calibri" 'lettertype legende
+        .SeriesCollection(1).DataLabels.Font.Size = 18 'lettergrootte labels in taartgrafiek
+        .SeriesCollection(1).DataLabels.Font.Bold = True 'vet lettertype
     End With
-    'plak de grafiek
+    Worksheets("Gegevens").Activate
+    PercJaTaart = Format(Range("LX1").Offset(Aantal + 1) / WorksheetFunction.Sum(Range(Range("LX1").Offset(Aantal + 1), Range("LX1").Offset(Aantal + 3))) * 100, "Fixed")
+'Vraag 3 berekenen
+    Worksheets("Gegevens").Activate
+    Range("LY1").Offset(Aantal + 2) = "Ja" 'Categorie voor legende x-as
+    Range("LY1").Offset(Aantal + 3) = "Neen" 'Categorie voor legende x-as
+    Range("LY1").Offset(Aantal + 4) = "Geen antwoord" 'Categorie voor legende x-as
+    Range("LY1").Offset(Aantal + 1, 1) = "Dezelfde makelaar" 'Categorie voor legende Y-as
+    Range("LY1").Offset(Aantal + 1, 2) = "Andere makelaar" 'Categorie voor legende Y-as
+    Range("LY1").Offset(Aantal + 1, 3) = "Particuliere verkoop" 'Categorie voor legende Y-as
+    Range("LY1").Offset(Aantal + 1, 4) = "Notaris" 'Categorie voor legende Y-as
+    Range("LY1").Offset(Aantal + 1, 5) = "Landmeter" 'Categorie voor legende Y-as
+    Range("LY1").Offset(Aantal + 1, 6) = "Andere" 'Categorie voor legende Y-as
+    Range("LY1").Offset(Aantal + 1, 7) = "Niet gespecifieerd" 'Categorie voor legende Y-as
+    Range("LY1").Offset(Aantal + 1, 8) = "Geen antwoord" 'Categorie voor legende Y-as van de missings, omdat die maar 1 categorie hebben
+    Range("LY1").Offset(Aantal + 2, 1) = WorksheetFunction.CountIf(Range("LY2", Range("LY1").Offset(Aantal - 1)), "Ja, dezelfde makelaar") 'aantal dezelfde makelaar
+    Range("LY1").Offset(Aantal + 2, 2) = WorksheetFunction.CountIf(Range("LY2", Range("LY1").Offset(Aantal - 1)), "Ja, door een andere vastgoedmakelaar") 'aantal andere makelaar
+    Range("LY1").Offset(Aantal + 3, 3) = WorksheetFunction.CountIf(Range("LZ2", Range("LZ1").Offset(Aantal - 1)), "Particuliere verkoop") 'aantal neen, particuliere verkoop
+    Range("LY1").Offset(Aantal + 3, 4) = WorksheetFunction.CountIf(Range("MA2", Range("MA1").Offset(Aantal - 1)), "Via een notaris") 'aantal neen, via een notaris
+    Range("LY1").Offset(Aantal + 3, 5) = WorksheetFunction.CountIf(Range("MB2", Range("MB1").Offset(Aantal - 1)), "Via een landmeter") 'aantal neen, via een landmeter
+    Range("LY1").Offset(Aantal + 3, 6) = WorksheetFunction.CountIf(Range("MC2", Range("MC1").Offset(Aantal - 1)), "Andere") 'aantal neen, andere
+    Range("LY1").Offset(Aantal + 3, 7) = WorksheetFunction.CountIf(Range("LZ2", Range("LZ1").Offset(Aantal - 1)), -99) 'aantal neen, geen antwoord
+    Range("LY1").Offset(Aantal + 4, 8) = WorksheetFunction.CountIf(Range("LX2", Range("LX1").Offset(Aantal - 1)), -99) 'aantal geen antwoord
+    Set GrfkdataVr3 = ActiveWorkbook.Worksheets("Gegevens").Range(Range("LY1").Offset(Aantal + 1), Range("LY1").Offset(Aantal + 4, 8)) 'range definiëren, want offset werkt niet in .setsourcedata
+    Charts.Add 'voeg grafiek toe
+    With ActiveChart 'kenmerken kolomgrafiek
+        .Name = "bemiddeling" 'naam om te kunnen verwijzen naar deze grafiek
+        .ChartType = xlColumnStacked 'type kolom gestapeld
+        .SetSourceData Source:=GrfkdataVr3, PlotBy:=xlColumns 'data, zowel categorieën als gegevens
+        .ChartStyle = 26 'opmaak van de grafiek volgens stijl nummer 26
+        .Legend.Font.Size = 18 'lettergrootte legende
+        .Legend.Font.Name = "Calibri" 'lettertype legende
+        .Axes(xlCategory).TickLabels.Font.Size = 18 'lettergrootte labels onder kolomgrafiek
+        .Axes(xlValue).TickLabels.Font.Size = 18 'lettergrootte labels links van kolomgrafiek
+    End With
+    Worksheets("Gegevens").Activate
+    PercNt = Format(WorksheetFunction.CountIf(Range("LY2", Range("LY1").Offset(Aantal - 1)), "Neen") / (WorksheetFunction.CountIf(Range("LY2", Range("LY1").Offset(Aantal - 1)), "Neen") + Range("LY1").Offset(Aantal + 4, 8) + WorksheetFunction.Sum(Range(Range("LY1").Offset(Aantal + 2, 1), Range("LY1").Offset(Aantal + 2, 2)))) * 100, "Fixed") 'percentage "neen" t.o.v. neen, missing en ja
+    AltGroot = WorksheetFunction.Max(Range(Range("LY1").Offset(Aantal + 3, 3), Range("LY1").Offset(Aantal + 3, 5))) 'hoogste waarde binnen de "neen"
+    For Each Cell In Range(Range("LY1").Offset(Aantal + 3, 3), Range("LY1").Offset(Aantal + 3, 5)) 'zoek hoogste waarde
+        If Cell.Value = AltGroot Then 'als grootste waarde "neen" overeenkomt
+            AltMak = LCase(Cell.Offset(-2, 0).Value) 'beschrijving alternatief voor makelaar zonder hoofdletters
+            Exit For 'stop met zoeken naar grootste waarde
+        End If
+    Next Cell
+    PercDezMak = Format(Range("LY1").Offset(Aantal + 2, 1) / WorksheetFunction.Sum(Range(Range("LY1").Offset(Aantal + 2, 1), Range("LY1").Offset(Aantal + 2, 2))) * 100, "Fixed") 'percentage binnen ja dat kiest voor deze makelaar
+    PercJaVr3 = Format(WorksheetFunction.Sum(Range(Range("LY1").Offset(Aantal + 2, 1), Range("LY1").Offset(Aantal + 2, 2))) / (WorksheetFunction.CountIf(Range("LY2", Range("LY1").Offset(Aantal - 1)), "Neen") + Range("LY1").Offset(Aantal + 4, 8) + WorksheetFunction.Sum(Range(Range("LY1").Offset(Aantal + 2, 1), Range("LY1").Offset(Aantal + 2, 2)))) * 100, "Fixed") 'percentage "ja" t.o.v. neen, missing en ja
+'Vraag 4 berekenen
+Worksheets("Gegevens").Activate
+Range("ME1").Offset(Aantal + 6) = "Expertise" 'Categorie voor legende x-as
+Range("ME1").Offset(Aantal + 6, 1) = "Snelle afhandeling" 'Categorie voor legende x-as
+Range("ME1").Offset(Aantal + 6, 2) = "Verlossing van administratieve lasten" 'Categorie voor legende x-as
+Range("ME1").Offset(Aantal + 6, 3) = "Juiste prijs voor de woning" 'Categorie voor legende x-as
+Range("ME1").Offset(Aantal + 6, 4) = "Andere" 'Categorie voor legende x-as
+Range("ME1").Offset(Aantal + 6, 5) = "Geen antwoord" 'Categorie voor legende x-as
+Range("ME1").Offset(Aantal + 7, -1) = "" 'zet titel x-as blanco
+'gegevens plakken in kolommen om verschillende series te krijgen en dus verschillende kleuren, met beschrijving in legende. Indien in rijen, is alles dezelfde kleur en beschrijving onder kolom
+Range("ME1").Offset(Aantal + 7) = WorksheetFunction.CountIf(Range("ME2", Range("ME1").Offset(Aantal - 1)), "De expertise") 'aantal die kiest voor expertise
+Range("ME1").Offset(Aantal + 7, 1) = WorksheetFunction.CountIf(Range("MF2", Range("MF1").Offset(Aantal - 1)), "De snelle afhandeling") 'aantal die kiest voor snelle afhandeling
+Range("ME1").Offset(Aantal + 7, 2) = WorksheetFunction.CountIf(Range("MG2", Range("MG1").Offset(Aantal - 1)), "De verlossing van administratieve lasten") 'aantal die kiest voor adm last
+Range("ME1").Offset(Aantal + 7, 3) = WorksheetFunction.CountIf(Range("MH2", Range("MH1").Offset(Aantal - 1)), "De juiste prijs voor de woning") 'aantal die kiest voor juiste prijs
+Range("ME1").Offset(Aantal + 7, 4) = WorksheetFunction.CountIf(Range("MI2", Range("MI1").Offset(Aantal - 1)), "Andere") 'aantal die kiest voor andere
+Range("ME1").Offset(Aantal + 7, 5) = WorksheetFunction.CountIf(Range("ME2", Range("ME1").Offset(Aantal - 1)), -99) 'aantal geen antwoord
+Set GrfkdataVr4 = ActiveWorkbook.Worksheets("Gegevens").Range(Range("ME1").Offset(Aantal + 6, -1), Range("ME1").Offset(Aantal + 7, 5)) 'range definiëren, want offset werkt niet in .setsourcedata
+Charts.Add 'voeg grafiek toe
+With ActiveChart 'kenmerken kolomgrafiek
+        .Name = "meerwaarde" 'naam om te kunnen verwijzen naar deze grafiek
+        .ChartType = xlColumnClustered 'type kolom
+        .SetSourceData Source:=GrfkdataVr4, PlotBy:=xlColumns 'data, zowel categorieën als gegevens
+        .ChartGroups(1).Overlap = -50 'ruimte tussen de categorieën
+        .ChartStyle = 26 'opmaak van de grafiek volgens stijl nummer 26
+        .Legend.Font.Size = 18 'lettergrootte legende
+        .Legend.Font.Name = "Calibri" 'lettertype legende
+        .Axes(xlValue).TickLabels.Font.Size = 18 'lettergrootte labels links van kolomgrafiek
+End With
+Worksheets("Gegevens").Activate
+Vr4Groot = WorksheetFunction.Max(Range(Range("ME1").Offset(Aantal + 7), Range("ME1").Offset(Aantal + 7, 3))) 'hoogste waarde binnen meerwaarde
+For Each Cell In Range(Range("ME1").Offset(Aantal + 7), Range("ME1").Offset(Aantal + 7, 3)) 'zoek hoogste waarde
+        If Cell.Value = Vr4Groot Then 'als grootste waarde overeenkomt met celwaarde
+            Vr4Max = LCase(Cell.Offset(-1, 0).Value) 'beschrijving meerwaarde makelaar zonder hoofdletters
+            Exit For 'stop met zoeken naar grootste waarde
+        End If
+Next Cell
+'Vraag 5 berekenen
+Worksheets("Gegevens").Activate
+Range("MK1").Offset(Aantal + 1) = "Omwille van diens goede reputatie" 'Categorie voor legende x-as
+Range("MK1").Offset(Aantal + 1, 1) = "Vanwege de aangeboden dienstverlening" 'Categorie voor legende x-as
+Range("MK1").Offset(Aantal + 1, 2) = "Op basis van eerdere positieve ervaringen" 'Categorie voor legende x-as
+Range("MK1").Offset(Aantal + 1, 3) = "Voor het aanbod van panden in de portefeuille" 'Categorie voor legende x-as
+Range("MK1").Offset(Aantal + 1, 4) = "Andere" 'Categorie voor legende x-as
+Range("MK1").Offset(Aantal + 1, 5) = "Geen antwoord" 'Categorie voor legende x-as
+Range("MK1").Offset(Aantal + 2, -1) = "" 'zet titel x-as blanco
+'gegevens plakken in kolommen om verschillende series te krijgen en dus verschillende kleuren, met beschrijving in legende. Indien in rijen, is alles dezelfde kleur en beschrijving onder kolom
+Range("MK1").Offset(Aantal + 2) = WorksheetFunction.CountIf(Range("MK2", Range("MK1").Offset(Aantal - 1)), "Omwille van diens goede reputatie") 'aantal die kiest voor reputatie
+Range("MK1").Offset(Aantal + 2, 1) = WorksheetFunction.CountIf(Range("ML2", Range("ML1").Offset(Aantal - 1)), "Vanwege de aangeboden dienstverlening") 'aantal die kiest voor dienstverlening
+Range("MK1").Offset(Aantal + 2, 2) = WorksheetFunction.CountIf(Range("MM2", Range("MM1").Offset(Aantal - 1)), "Op basis van eerdere positieve ervaringen") 'aantal die kiest voor eerdere pos erv
+Range("MK1").Offset(Aantal + 2, 3) = WorksheetFunction.CountIf(Range("MN2", Range("MN1").Offset(Aantal - 1)), "Voor het aanbod van panden in de portefeuille") 'aantal die kiest voor aanbod
+Range("MK1").Offset(Aantal + 2, 4) = WorksheetFunction.CountIf(Range("MO2", Range("MO1").Offset(Aantal - 1)), "Andere reden") 'aantal die kiest voor andere
+Range("MK1").Offset(Aantal + 2, 5) = WorksheetFunction.CountIf(Range("ML2", Range("ML1").Offset(Aantal - 1)), -99) 'aantal geen antwoord
+Set GrfkdataVr5 = ActiveWorkbook.Worksheets("Gegevens").Range(Range("MK1").Offset(Aantal + 1, -1), Range("MK1").Offset(Aantal + 2, 5)) 'range definiëren, want offset werkt niet in .setsourcedata
+Charts.Add 'voeg grafiek toe
+With ActiveChart 'kenmerken kolomgrafiek
+        .Name = "makelaarskeuze" 'naam om te kunnen verwijzen naar deze grafiek
+        .ChartType = xlColumnClustered 'type kolom
+        .SetSourceData Source:=GrfkdataVr5, PlotBy:=xlColumns 'data, zowel categorieën als gegevens
+        .ChartGroups(1).Overlap = -50 'ruimte tussen de categorieën
+        .ChartStyle = 26 'opmaak van de grafiek volgens stijl nummer 26
+        .Legend.Font.Size = 18 'lettergrootte legende
+        .Legend.Font.Name = "Calibri" 'lettertype legende
+        .Axes(xlValue).TickLabels.Font.Size = 18 'lettergrootte labels links van kolomgrafiek
+End With
+Worksheets("Gegevens").Activate
+Vr5Groot = WorksheetFunction.Max(Range(Range("MK1").Offset(Aantal + 2), Range("MK1").Offset(Aantal + 2, 3))) 'hoogste waarde binnen makelaarskeuze
+For Each Cell In Range(Range("MK1").Offset(Aantal + 2), Range("MK1").Offset(Aantal + 2, 3)) 'zoek hoogste waarde
+        If Cell.Value = Vr5Groot Then 'als grootste waarde overeenkomt met celwaarde
+            Vr5Max = LCase(Cell.Offset(-1, 0).Value) 'beschrijving keuze makelaar zonder hoofdletters
+            Exit For 'stop met zoeken naar grootste waarde
+        End If
+Next Cell
 
-
+'Resultaten wegschrijven
+'check of word open is via error catch (opzoeken op het net)
+Set Wd = CreateObject("Word.Application") 'activeer word
+Set Rapport = Wd.Documents.Add(Template:=ActiveWorkbook.Path & "\Makelaarsrapport.dotx") 'het sjabloon van het rapport openen
 'Vraag 1 resultaten
     Select Case GemVr1 'De juiste afbeelding selecteren
         Case Is > 4.5
-            'Afbeelding zeer tevreden
+            Smiley = ActiveWorkbook.Path & "\5.png" 'het afbeeldingsbestand dat moet geplakt worden, dat zich in dezelfde map bevindt
+            Rapport.Bookmarks("Tevredenheid").Range.Text = "zeer tevreden" 'de uitleg bij de afbeelding voor in de tekst
         Case 3.5 To 4.5
-            'Afbeelding tevreden
+            Smiley = ActiveWorkbook.Path & "\4.png"
+            Rapport.Bookmarks("Tevredenheid").Range.Text = "tevreden"
         Case 2.5 To 3.5
-            'Afbeelding neutraal
+            Smiley = ActiveWorkbook.Path & "\3.png"
+            Rapport.Bookmarks("Tevredenheid").Range.Text = "neutraal"
         Case 1.5 To 2.5
-            'Afbeelding niet tevreden
+            Smiley = ActiveWorkbook.Path & "\2.png"
+            Rapport.Bookmarks("Tevredenheid").Range.Text = "niet tevreden"
         Case 0 To 1.5
-            'Afbeelding ontevreden
+            Smiley = ActiveWorkbook.Path & "\1.png"
+            Rapport.Bookmarks("Tevredenheid").Range.Text = "ontevreden"
     End Select
+Wd.Visible = True 'word zichtbaar maken
+Rapport.Activate 'maak het sjabloon actief
+Rapport.Bookmarks("Smiley").Range.InlineShapes.AddPicture Filename:=Smiley, linktofile:=False, savewithdocument:=True 'de afbeelding smiley uit de select case aan het rapport toevoegen
+    'plak de afbeelding in het rapport
 'Vraag 2 resultaten
+Immosurvey.Charts("taartgrafiek").CopyPicture 'de grafiek kopiëren
+Rapport.Bookmarks("Taartgrafiek").Range.PasteAndFormat (wdChartPicture) 'de grafiek plakken in het word document
+Rapport.InlineShapes(2).Width = 15 * 30 'de breedte van de afbeelding bepalen (in pixels denk ik, dus het makkelijkst om te vermenigvuldigen met een waarde om snel het juiste formaat te vinden
+Rapport.InlineShapes(2).Height = 9.81 * 30 'idem voor de hoogte
+'Vraag 3 resultaten
+Immosurvey.Charts("bemiddeling").CopyPicture
+Rapport.Bookmarks("Bemiddeling").Range.PasteAndFormat (wdChartPicture)
+Rapport.InlineShapes(3).Width = 15 * 30
+Rapport.InlineShapes(3).Height = 9.81 * 30
+'Vraag 4 resultaten
+Immosurvey.Charts("meerwaarde").CopyPicture
+Rapport.Bookmarks("Meerwaarde").Range.PasteAndFormat (wdChartPicture)
+Rapport.InlineShapes(4).Width = 15 * 30
+Rapport.InlineShapes(4).Height = 9.81 * 30
+'Vraag 5 resultaten
+Immosurvey.Charts("makelaarskeuze").CopyPicture
+Rapport.Bookmarks("Makelaarskeuze").Range.PasteAndFormat (wdChartPicture)
+Rapport.InlineShapes(5).Width = 15 * 30
+Rapport.InlineShapes(5).Height = 9.81 * 30
+'Tekst invoegen (volgorde bookmarks Word doc)
+Rapport.Bookmarks("Aantal").Range.Text = Aantal 'aantal respondenten invoegen onderaan het rapport
+For i = 1 To 6 'invoegen makelaarsnaam in hele document (Makelaar1 tem Makelaar6)
+Rapport.Bookmarks("Makelaar" & i).Range.Text = Makelaar
+Next i
+If WorksheetFunction.CountIf(Range("LY2", Range("LY1").Offset(Aantal - 1)), "Neen") > 0 Then 'enkel indien "neen" werd gekozen
+    Rapport.Bookmarks("NtMakelaar").Range.Text = "De resterende " & PercNt & "% opteert in de toekomst eerder om te werken via een " & AltMak & "."
+End If
+Rapport.Bookmarks("PercDezMak").Range.Text = PercDezMak 'percentage "ja, dezelfde makelaar"
+Rapport.Bookmarks("PercJaTaart").Range.Text = PercJaTaart 'percentage "Ja" voor aanraden makelaar
+Rapport.Bookmarks("PercJaVr3").Range.Text = PercJaVr3 'percentage "Ja" voor opnieuw makelaar
+Rapport.Bookmarks("Vr4Max").Range.Text = Vr4Max 'categorie grootste meerwaarde
+Rapport.Bookmarks("Vr5Max").Range.Text = Vr5Max 'categorie grootste reden makelaarskeuze
+Rapport.SaveAs Filename:=ActiveWorkbook.Path & "\" & Makelaar & ".docx", FileFormat:=wdFormatXMLDocument 'Bewaar als een .docx doc met de makelaarsnaam als bestandsnaam
+Wd.Quit
 
+End Sub
 
+Sub Makelaar()
 
-'Dim Einde As Long
-'Dim Resp As Range
-'Dim CntResp As Long
-'
-'CntResp = 0
-'Einde = Range("A1").End(xlDown).Row 'Weten wat de laatste rij is in het bestand
-'For Each Resp In Range("LV3", Cells(Einde, 334)) 'Alle cellen doorlopen van de start makelaarsblok
-'    If Resp.Value = 1 Then 'schrijf de niet lege cellen weg
-'        CntResp = CntResp + 1
-'        Range(Resp, Resp.Offset(0, 20)).Copy
-'        Sheets(2).Activate
-'        Sheets(2).Range(Cells(CntResp, 1)).PasteSpecial
-'        Sheets(1).Activate
-'    End If
-'
-'Next Resp
+Dim Makelaar As Range
+Dim Cell As Range
+Dim Kaarten As Workbook
+Dim Leden As Worksheet
+Dim Makelaarslijst As Range
+Dim Zoek As Range
+
+Set Kaarten = Application.Workbooks("immosurvey kaarten.xlsx")
+Set Leden = Application.Workbooks("Leden CIB.xlsx").Worksheets("Blad2")
+Kaarten.Activate
+Set Makelaar = Application.InputBox("Selecteer het bereik met de makelaars in 'immosurvey kaarten.xlsx'", "Selectie makelaars", Type:=8)
+Leden.Activate
+Set Makelaarslijst = Leden.Range(Range("A2"), Range("A2").End(xlDown))
+'Application.ScreenUpdating = False
+
+Kaarten.Activate
+For Each Cell In Makelaar
+    If Cell.Value <> "NA" And Cell.Value <> "blanco meegegeven" And Not IsEmpty(Cell) Then
+        Leden.Activate
+        On Error GoTo NtInLijst
+        Set Zoek = Makelaarslijst.Find(Cell.Value, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, MatchCase:=False, matchbyte:=False)
+Opzoeken:
+        Zoek.Interior.Color = xlYellow
+        Cell.Offset(0, 1) = Zoek.Offset(0, 1).Value
+        On Error GoTo 0
+    End If
+Next Cell
+'Application.ScreenUpdating = True
+
+Exit Sub
+
+NtInLijst:
+Set Zoek = Application.InputBox("Makelaar niet gevonden. Zoek naar " & Cell.Value & " " & Cell.Offset(0, 2) & " " & Cell.Offset(0, 5) & " en selecteer de cel. Of selecteer cel A1 als de makelaar niet in de lijst staat.", "Makelaar vinden", Type:=8)
+If Zoek = Range("A1") Then
+    Set Zoek = Range("A1").End(xlDown).Offset(1, 0)
+    Zoek.Font.Color = xlRed
+    Zoek.Value = Cell.Value
+    Zoek.Offset(0, 1).Value = Zoek.Offset(-1, 1).Value + 1
+End If
+'Application.ScreenUpdating = True
+Resume Opzoeken
+
+End Sub
+Sub vergelijken()
+Dim Cell As Range
+Dim Gevonden As Range
+
+For Each Cell In Selection
+Worksheets(1).Activate
+Set Gevonden = Range("A2", "A1319").Find(Cell.Value, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, MatchCase:=False, matchbyte:=False)
+If Cell.Value = Gevonden.Value Then
+Gevonden.Interior.Color = xlYellow
+End If
+Worksheets(3).Activate
+Next Cell
 
 End Sub
