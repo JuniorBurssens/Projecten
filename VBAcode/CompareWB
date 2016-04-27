@@ -1,0 +1,76 @@
+Sub CompWBFormula()
+
+'This macro compares two workbooks to check if they contain identical formulas. It is developed and used to check if a template file has been changed by its user.
+'For a similar macro that checks if all values in two workbooks are identical, see CompWBValue
+
+Dim AnnulOfOK As Integer
+Dim Sjabloonpad As String
+Dim Sjabloon As Workbook
+Dim DplanPad As String
+Dim Dplan As Workbook
+Dim Blad As Worksheet
+Dim BladIndex As Integer
+Dim LsteRijSjab As Long
+Dim LsteKolSjab As Long
+Dim SjabArr() As Long
+Dim DplanArr() As Long
+Dim Bereik As Range
+Dim i As Range
+Dim Rij As Long
+Dim Kolom As Long
+
+
+'open the files with a dialog
+Opendoen:
+
+MsgBox "Selecteer het originele sjabloon" 'So users know to select the original file
+Application.FileDialog(msoFileDialogOpen).InitialFileName = ActiveWorkbook.Path 'Open the file dialog in the same path of the macro
+Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False 'Only 1 file can be selected or you won't know what's what
+AnnulOfOK = Application.FileDialog(msoFileDialogOpen).Show 'Returns 0 when cancelled 1 when selected
+If AnnulOfOK > 0 Then 'check for cancelling
+    Sjabloonpad = Application.FileDialog(msoFileDialogOpen).SelectedItems(1) 'set path to file
+    Set Sjabloon = Workbooks.Open(Sjabloonpad) 'open file
+Else
+    If MsgBox("Wil je stoppen?", vbYesNo) = vbYes Then 'Give the user the option to stop executing the macro
+        Exit Sub
+    Else
+        GoTo Opendoen 'return to file selection
+    End If
+End If
+
+MsgBox "Selecteer het tariefplan van de watermaatschappij" 'So users know to select the changed file
+Application.FileDialog(msoFileDialogOpen).InitialFileName = ActiveWorkbook.Path
+Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False
+AnnulOfOK = Application.FileDialog(msoFileDialogOpen).Show
+If AnnulOfOK > 0 Then
+    DplanPad = Application.FileDialog(msoFileDialogOpen).SelectedItems(1)
+    Set Dplan = Workbooks.Open(DplanPad)
+Else
+    If MsgBox("Wil je stoppen?", vbYesNo) = vbYes Then
+        Exit Sub
+    Else
+        GoTo Opendoen 'return to beginning of file selection
+    End If
+End If
+
+'loop sheets
+For Each Blad In Sjabloon
+
+    BladIndex = Blad.Index 'get the index of the sheet in the original workbook for use in the other workbook
+    'Get the range of used cells in the original sheet. All the rest is to be ignored.
+    LsteRijSjab = Sjabloon.Cells(Sjabloon.Rows.Count, "A").End(xlUp).Row
+    LsteKolSjab = Sjabloon.Cells(7, Sjabloon.Columns.Count).End(xlToLeft).Column
+    ReDim SjabArr(1 To LsteRijSjab, 1 To LsteKolSjab) 'construct an array to hold the formula for every cell
+    ReDim DplanArr(1 To LsteRijSjab, 1 To LsteKolSjab) 'construct an equal size array for the other workbook cells
+    
+    'populate the arrays
+    '''''''''''''''''''''''''Reverse the approach; loop the array and use the index numbers to refer to a cells(r,c) structure.
+    Set Bereik = Sjabloon.Blad.Range(A1, Cells(LsteRijSjab, LsteKolSjab))
+        For Each i In Bereik
+            Rij = i.Row
+            Kolom = i.Column
+            SjabArr(Rij, Kolom) = i.Formula
+        Next i
+
+Next Blad
+End Sub
