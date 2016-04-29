@@ -3,22 +3,28 @@ Sub CompWBFormula()
 'This macro compares two workbooks to check if they contain identical formulas. It is developed and used to check if a template file has been changed by its user.
 'For a similar macro that checks if all values in two workbooks are identical, see CompWBValue
 
+Dim Vergelijken As Worksheet
 Dim AnnulOfOK As Integer
 Dim Sjabloonpad As String
+Dim SjabNaam As String
 Dim Sjabloon As Workbook
 Dim DplanPad As String
+Dim DplanNaam As String
 Dim Dplan As Workbook
 Dim Blad As Worksheet
 Dim BladIndex As Integer
-Dim LsteRijSjab As Long
-Dim LsteKolSjab As Long
-Dim SjabArr() As Long
-Dim DplanArr() As Long
+Dim LsteRij As Long
+Dim LsteKol As Long
+Dim SjabArr() As Variant
+Dim DplanArr() As Variant
+Dim ResCol As New Collection
 Dim Bereik As Range
-Dim i As Range
-Dim Rij As Long
-Dim Kolom As Long
+Dim r As Long
+Dim c As Long
+Dim i As Long
 
+Set Vergelijken = ThisWorkbook.Sheets(1)
+Vergelijken.UsedRange.ClearContents
 
 'open the files with a dialog
 Opendoen:
@@ -27,9 +33,15 @@ MsgBox "Selecteer het originele sjabloon" 'So users know to select the original 
 Application.FileDialog(msoFileDialogOpen).InitialFileName = ActiveWorkbook.Path 'Open the file dialog in the same path of the macro
 Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False 'Only 1 file can be selected or you won't know what's what
 AnnulOfOK = Application.FileDialog(msoFileDialogOpen).Show 'Returns 0 when cancelled 1 when selected
-If AnnulOfOK > 0 Then 'check for cancelling
+
+If AnnulOfOK <> 0 Then 'check for cancelling
     Sjabloonpad = Application.FileDialog(msoFileDialogOpen).SelectedItems(1) 'set path to file
-    Set Sjabloon = Workbooks.Open(Sjabloonpad) 'open file
+    If Not IsWorkBookOpen(Sjabloonpad) Then
+        Set Sjabloon = Workbooks.Open(Sjabloonpad) 'open file
+    Else
+        SjabNaam = Dir(Sjabloonpad)
+        Set Sjabloon = Workbooks(SjabNaam)
+    End If
 Else
     If MsgBox("Wil je stoppen?", vbYesNo) = vbYes Then 'Give the user the option to stop executing the macro
         Exit Sub
@@ -38,13 +50,26 @@ Else
     End If
 End If
 
+Sjabloon.Activate
+For Each Blad In Sjabloon.Worksheets
+    Blad.Unprotect
+Next
+
+Vergelijken.Activate
+
 MsgBox "Selecteer het tariefplan van de watermaatschappij" 'So users know to select the changed file
 Application.FileDialog(msoFileDialogOpen).InitialFileName = ActiveWorkbook.Path
 Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False
 AnnulOfOK = Application.FileDialog(msoFileDialogOpen).Show
-If AnnulOfOK > 0 Then
+
+If AnnulOfOK <> 0 Then
     DplanPad = Application.FileDialog(msoFileDialogOpen).SelectedItems(1)
-    Set Dplan = Workbooks.Open(DplanPad)
+    If Not IsWorkBookOpen(DplanPad) Then
+        Set Dplan = Workbooks.Open(DplanPad)
+    Else
+        DplanNaam = Dir(DplanPad)
+        Set Dplan = Workbooks(DplanNaam)
+    End If
 Else
     If MsgBox("Wil je stoppen?", vbYesNo) = vbYes Then
         Exit Sub
@@ -53,24 +78,106 @@ Else
     End If
 End If
 
-'loop sheets
-For Each Blad In Sjabloon
+Vergelijken.Activate
+Application.ScreenUpdating = False
 
+Vergelijken.Cells(1, 1).Value = "Locatie sjabloon: " & Sjabloonpad
+Vergelijken.Cells(2, 1).Value = "Locatie tariefplan: " & DplanPad
+Vergelijken.Cells(3, 1).Value = "Voortgang"
+Vergelijken.Cells(4, 1).Value = "Gemarkeerde cellen"
+
+Dplan.Activate
+For Each Blad In Dplan.Worksheets
+    Blad.Unprotect
+Next
+
+'loop sheets
+Sjabloon.Activate
+
+For Each Blad In Sjabloon.Worksheets
+
+    Blad.Activate
     BladIndex = Blad.Index 'get the index of the sheet in the original workbook for use in the other workbook
     'Get the range of used cells in the original sheet. All the rest is to be ignored.
-    LsteRijSjab = Sjabloon.Cells(Sjabloon.Rows.Count, "A").End(xlUp).Row
-    LsteKolSjab = Sjabloon.Cells(7, Sjabloon.Columns.Count).End(xlToLeft).Column
-    ReDim SjabArr(1 To LsteRijSjab, 1 To LsteKolSjab) 'construct an array to hold the formula for every cell
-    ReDim DplanArr(1 To LsteRijSjab, 1 To LsteKolSjab) 'construct an equal size array for the other workbook cells
+    LsteRij = Blad.Cells.SpecialCells(xlCellTypeLastCell).Row
+    LsteKol = Blad.Cells.SpecialCells(xlCellTypeLastCell).Column
+    ReDim SjabArr(1 To LsteRij, 1 To LsteKol) 'construct an array to hold the formula for every cell
+    ReDim DplanArr(1 To LsteRij, 1 To LsteKol) 'construct an equal size array for the other workbook cells
     
     'populate the arrays
-    '''''''''''''''''''''''''Reverse the approach; loop the array and use the index numbers to refer to a cells(r,c) structure.
-    Set Bereik = Sjabloon.Blad.Range(A1, Cells(LsteRijSjab, LsteKolSjab))
-        For Each i In Bereik
-            Rij = i.Row
-            Kolom = i.Column
-            SjabArr(Rij, Kolom) = i.Formula
-        Next i
+    Set Bereik = Blad.Range("A1", Cells(LsteRij, LsteKol))
+        
+        For r = LBound(SjabArr, 1) To UBound(SjabArr, 1)
+            For c = LBound(SjabArr, 2) To UBound(SjabArr, 2)
+                If Bereik.Cells(r, c).HasFormula = True Then
+                    SjabArr(r, c) = Bereik.Cells(r, c).Formula
+                End If
+            Next c
+        Next r
+    
+    Dplan.Sheets(BladIndex).Activate
+    Set Bereik = Dplan.Sheets(BladIndex).Range("A1", Cells(LsteRij, LsteKol))
+        
+        For r = LBound(DplanArr, 1) To UBound(DplanArr, 1)
+            For c = LBound(DplanArr, 2) To UBound(DplanArr, 2)
+                DplanArr(r, c) = Bereik.Cells(r, c).Formula
+            Next c
+        Next r
+        
+
+        
+    'Compare the formulas in the arrays and mark the different ones
+    Dplan.Sheets(BladIndex).Activate
+    For r = 1 To LsteRij
+        For c = 1 To LsteKol
+            If Not IsEmpty(SjabArr(r, c)) Then
+                If SjabArr(r, c) <> DplanArr(r, c) Then
+                    Bereik.Cells(r, c).Interior.Color = vbRed
+                    ResCol.Add Dplan.Sheets(BladIndex).Name & "!" & Cells(r, c).Address
+                End If
+            End If
+        Next c
+    Next r
+
+Vergelijken.Activate
+Application.ScreenUpdating = True
+Vergelijken.Cells(4, BladIndex + 1).Value = Dplan.Sheets(BladIndex).Name
+Application.ScreenUpdating = False
 
 Next Blad
+
+'Alle gemarkeerde cellen oplijsten
+Vergelijken.Activate
+For i = 1 To ResCol.Count
+    Vergelijken.Cells(i + 4, 1).Value = ResCol(i)
+Next i
+
+Application.ScreenUpdating = True
+
+'Code om de inhoud van de arrays af te drukken voor foutcontrole
+'Vergelijken.Range("A1").Resize(r - 1, c - 1).Value = SjabArr
+'Vergelijken.Range("A1").Resize(r - 1, c - 1).Value = DplanArr
+        
+
+MsgBox "Gedaan!"
+
 End Sub
+
+Function IsWorkBookOpen(FileName As String)
+'Function copied from the answer on SO by Siddharth Rout: http://stackoverflow.com/a/9373914
+    
+    Dim ff As Long, ErrNo As Long
+
+    On Error Resume Next
+    ff = FreeFile()
+    Open FileName For Input Lock Read As #ff
+    Close ff
+    ErrNo = Err
+    On Error GoTo 0
+
+    Select Case ErrNo
+    Case 0:    IsWorkBookOpen = False
+    Case 70:   IsWorkBookOpen = True
+    Case Else: Error ErrNo
+    End Select
+End Function
