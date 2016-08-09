@@ -1,0 +1,160 @@
+Sub Werkbestanden()
+
+Dim LeesVar As Worksheet
+Dim AnnulOfOK As Long
+Dim Sjabloonpad As String
+Dim SjabNaam As String
+Dim Sjabloon As Workbook
+Dim Blad As Worksheet
+Dim FolderPad As String
+Dim DWM As String
+Dim BladIndex As Long
+Dim Werkbestanden As Workbook
+Dim AantalWs As Long
+Dim Bladnamen() As Variant
+Dim n As Long
+Dim LeesStart As Long
+Dim BronSheet As String
+Dim BronRange() As Variant
+Dim DoelSheet As String
+Dim DoelRange() As Variant
+Dim TeKopieren As Range
+Dim Hoofding() As Variant
+Dim DataSubtitel As Range
+Dim r As Long
+Dim k As Long
+Dim Subtitels() As Variant
+Dim SubtitelRange() As Variant
+Dim t As Long
+
+Set LeesVar = ActiveWorkbook.ActiveSheet
+
+'open the files with a dialog
+Opendoen:
+
+MsgBox "Selecteer het tariefplansjabloon van de watermaatschappij" 'So users know to select the file
+Application.FileDialog(msoFileDialogOpen).InitialFileName = ActiveWorkbook.Path 'Open the file dialog in the same path of the macro
+Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False 'Only 1 file can be selected or you won't know what's what
+AnnulOfOK = Application.FileDialog(msoFileDialogOpen).Show 'Returns 0 when cancelled 1 when selected
+
+If AnnulOfOK <> 0 Then 'check for cancelling
+    Sjabloonpad = Application.FileDialog(msoFileDialogOpen).SelectedItems(1) 'set path to file
+    If Not IsWorkBookOpen(Sjabloonpad) Then
+        Set Sjabloon = Workbooks.Open(Sjabloonpad) 'open file
+    Else
+        SjabNaam = Dir(Sjabloonpad)
+        Set Sjabloon = Workbooks(SjabNaam)
+    End If
+Else
+    If MsgBox("Wil je stoppen?", vbYesNo) = vbYes Then 'Give the user the option to stop executing the macro
+        Exit Sub
+    Else
+        GoTo Opendoen 'return to file selection
+    End If
+End If
+
+Sjabloon.Activate
+For Each Blad In Sjabloon.Worksheets
+    Blad.Unprotect
+Next
+
+KiesFolderOpslag:
+
+FolderPad = GetFolder()
+If FolderPad = vbNullString Then
+    If MsgBox("Wil je stoppen?", vbYesNo) = vbYes Then 'Give the user the option to stop executing the macro
+        Sjabloon.Close SaveChanges:=False
+        Exit Sub
+    Else
+        GoTo KiesFolderOpslag 'return to folder selection
+    End If
+End If
+
+DWM = LeesVar.Range("A2")
+
+'Save relevant worksheets to editable workbook.
+'Create new workbook and add blank sheets
+
+Workbooks.Add
+ActiveWorkbook.SaveAs (FolderPad & "\" & DWM & "_werkbestanden.xlsx")
+Set Werkbestanden = ActiveWorkbook
+'In volgend array worden de werkbladen in het werkbestand benoemd
+Bladnamen = LeesVar.Range(LeesVar.Cells(2, 2), LeesVar.Cells(LeesVar.Rows.Count, 3).End(xlUp))
+AantalWs = Werkbestanden.Sheets.Count
+Werkbestanden.Sheets.Add After:=Sheets(AantalWs), Count:=UBound(Bladnamen, 1) - AantalWs
+
+'Copy over values to correct location
+For n = 1 To UBound(Bladnamen, 1)
+    
+    'inlezen variabelen
+    LeesStart = n * 5
+    BronSheet = Bladnamen(n, 2)
+    BronRange = LeesVar.Range(LeesVar.Cells(2, LeesStart), LeesVar.Cells(LeesVar.Rows.Count, LeesStart).End(xlUp)) 'cells kolom vervangen door variabele, afhankelijk van n
+    DoelSheet = Bladnamen(n, 1)
+    DoelRange = LeesVar.Range(LeesVar.Cells(2, LeesStart + 1), LeesVar.Cells(LeesVar.Rows.Count, LeesStart + 1).End(xlUp))
+    Hoofding = LeesVar.Range(LeesVar.Cells(2, LeesStart + 2), LeesVar.Cells(LeesVar.Rows.Count, LeesStart + 2).End(xlUp))
+    Set DataSubtitel = LeesVar.Range(LeesVar.Cells(2, LeesStart + 3), LeesVar.Cells(LeesVar.Rows.Count, LeesStart + 3).End(xlUp))
+    If DataSubtitel.Cells.Count = 1 Then 'opvangen van range met 1 cel
+        ReDim Subtitels(1 To 1, 1 To 1)
+        Subtitels(1, 1) = DataSubtitel.Value
+        ReDim SubtitelRange(1 To 1, 1 To 1)
+        SubtitelRange(1, 1) = DataSubtitel.Offset(0, 1).Value
+    Else
+        Subtitels = LeesVar.Range(LeesVar.Cells(2, LeesStart + 3), LeesVar.Cells(LeesVar.Rows.Count, LeesStart + 3).End(xlUp))
+        SubtitelRange = LeesVar.Range(LeesVar.Cells(2, LeesStart + 4), LeesVar.Cells(LeesVar.Rows.Count, LeesStart + 4).End(xlUp))
+    End If
+    Werkbestanden.Sheets(n).Name = DoelSheet
+    Werkbestanden.Sheets(DoelSheet).Activate
+    
+    ' If BronSheet <> "T220" Then 'opvangen long formaat T220
+        
+        'Hoofding invoegen in werkbestand
+        For k = 1 To UBound(Hoofding, 1)
+            Werkbestanden.Sheets(DoelSheet).Range("A1").Offset(0, k - 1).Value = Hoofding(k, 1)
+        Next k
+        
+        If BronSheet = "T220" Then 'maken nieuwe ID voor T220 (hergebruiken indien alles nieuw ID moet krijgen)
+            With Werkbestanden.Sheets(DoelSheet).Range("A2")
+                .Value = "T220a001"
+                .AutoFill .Resize(28, 1), xlFillSeries
+            End With
+            'eenheid uitvullen
+            With Werkbestanden.Sheets(DoelSheet).Range("E2")
+                .Value = "m"
+                .AutoFill .Resize(28, 1), xlFillCopy
+            End With
+            'Uitbreiding/vervanging uitvullen
+            Werkbestanden.Sheets(DoelSheet).Range("D2").Value = "Uitbreiding"
+            Werkbestanden.Sheets(DoelSheet).Range("D3").Value = "Vervanging"
+            Werkbestanden.Sheets(DoelSheet).Range("D2:D3").AutoFill Destination:=Werkbestanden.Sheets(DoelSheet).Range("D2:D29"), Type:=xlFillCopy
+        End If
+        
+        'Plaatsen data in werkbestand
+        For r = 1 To UBound(BronRange, 1)
+            Set TeKopieren = Sjabloon.Sheets(BronSheet).Range(BronRange(r, 1))
+            If BronSheet = "T220" Then 'opvangen long formaat in T220
+                TeKopieren.Copy
+                Werkbestanden.Sheets(DoelSheet).Range(DoelRange(r, 1)).PasteSpecial Transpose:=True, Paste:=xlPasteValues
+            Else
+                Werkbestanden.Sheets(DoelSheet).Range(DoelRange(r, 1)).Resize(TeKopieren.Rows.Count, TeKopieren.Columns.Count).Cells.Value = TeKopieren.Cells.Value
+            End If
+        Next r
+        
+        'Verwijderen lege rijen op basis van lege cellen in kolom A
+        On Error Resume Next
+        Werkbestanden.Sheets(DoelSheet).Range("A:A").SpecialCells(xlCellTypeBlanks).EntireRow.Delete
+        On Error GoTo 0
+        
+        'Toevoegen subtitels in kolom B.
+        For t = 1 To UBound(Subtitels, 1)
+            Werkbestanden.Sheets(DoelSheet).Range(SubtitelRange(t, 1)).Value = Subtitels(t, 1)
+        Next t
+'    Else
+'
+'    End If
+Next n
+
+Sjabloon.Close SaveChanges:=False
+Werkbestanden.Close SaveChanges:=True
+
+End Sub
