@@ -168,3 +168,73 @@ For n = 1 To UBound(Sheetnamen)
 Next n
 
 End Sub
+
+Sub MakeGridOfCharts(AnalyseSheet As Worksheet, EerstKaart As Long, LstKaart As Long, nRowsTall As Long, nColsWide As Long, nChartsPerRow As Long, nFirstRow As Long, nFirstCol As Long)
+'Adapted sub to pass variables from other sub
+  ' Original code by Jon Peltier (3/19/2008, mod 10/03/2014)
+  ' http://peltiertech.com/
+
+  ' chart size - adjust as desired
+  ' set one or both to zero to use dimensions of active chart
+  '   (or first chart if no chart is active)
+  'Const nRowsTall As Long = 10
+  'Const nColsWide As Long = 5
+
+  ' chart layout - adjust as desired
+  'Const nChartsPerRow As Long = 2
+  Const nSkipRows As Long = 0
+  Const nSkipCols As Long = 0
+  'Const nFirstRow As Long = 60
+  'Const nFirstCol As Long = 5
+
+  Dim iChart As Long
+  Dim chtob As ChartObject
+  Dim dWidth As Double
+  Dim dHeight As Double
+  Dim rData As Range
+  Dim dFirstChartTop As Double
+  Dim dFirstChartLeft As Double
+  Dim dRowsBetweenChart As Double
+  Dim dColsBetweenChart As Double
+  Dim Counter As Long
+
+  If AnalyseSheet.ChartObjects.Count > 0 Then
+
+    With AnalyseSheet.Cells(nFirstRow, nFirstCol)
+      If nRowsTall * nColsWide > 0 Then
+        dWidth = nColsWide * .Width
+        dHeight = nRowsTall * .Height
+      Else
+        If Not ActiveChart Is Nothing Then
+          Set chtob = ActiveChart.Parent
+        Else
+          Set chtob = AnalyseSheet.ChartObjects(1)
+        End If
+        dWidth = chtob.Width
+        dHeight = chtob.Height
+      End If
+
+      dFirstChartLeft = .Left
+      dFirstChartTop = .Top
+      dRowsBetweenChart = nSkipRows * .Height
+      dColsBetweenChart = nSkipCols * .Width
+    End With
+
+    For iChart = EerstKaart To LstKaart
+
+      Set chtob = AnalyseSheet.ChartObjects(iChart)
+      Counter = Counter + 1
+      With chtob
+        .Left = ((Counter - 1) Mod nChartsPerRow) * _
+            (dWidth + dColsBetweenChart) + dFirstChartLeft
+        .Top = Int((Counter - 1) / nChartsPerRow) * _
+            (dHeight + dRowsBetweenChart) + dFirstChartTop
+        .Width = dWidth
+        .Height = dHeight
+      End With
+
+    Next
+
+  End If
+
+End Sub
