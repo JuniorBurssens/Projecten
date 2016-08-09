@@ -1,0 +1,170 @@
+Sub AnalyseWerkbestanden()
+
+Dim LeesVar As Worksheet
+Dim AnnulOfOK As Long
+Dim Werkbestandpad As String
+Dim WerkbNaam As String
+Dim Werkbestanden As Workbook
+Dim FolderPad As String
+Dim DWM As String
+Dim Analysebestanden As Workbook
+Dim Sheetnamen() As Variant
+Dim AnalyseSheet As Worksheet
+Dim RekenRange As String
+Dim n As Long
+Dim Rekendata() As Variant
+Dim Aangroei() As Variant
+Dim Hoofding As Range
+Dim EerstKaart As Long
+Dim LstKaart As Long
+Dim Berekeningen() As Variant
+Dim b As Long
+Dim r As Long
+Dim c As Long
+Dim Arrayplak As Range
+Dim EerstKolom As Long
+Dim LstKolom As Long
+Dim h As Range
+Dim x As Range
+Dim Kaart As Shape
+Dim Bronkaart As Range
+
+Set LeesVar = ActiveWorkbook.ActiveSheet
+
+Opendoen:
+
+MsgBox "Selecteer het werkbestand van de watermaatschappij" 'So users know to select the file
+Application.FileDialog(msoFileDialogOpen).InitialFileName = ActiveWorkbook.Path 'Open the file dialog in the same path of the macro
+Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False 'Only 1 file can be selected or you won't know what's what
+AnnulOfOK = Application.FileDialog(msoFileDialogOpen).Show 'Returns 0 when cancelled 1 when selected
+
+If AnnulOfOK <> 0 Then 'check for cancelling
+    Werkbestandpad = Application.FileDialog(msoFileDialogOpen).SelectedItems(1) 'set path to file
+    If Not IsWorkBookOpen(Werkbestandpad) Then
+        Set Werkbestanden = Workbooks.Open(Werkbestandpad) 'open file
+    Else
+        WerkbNaam = Dir(Werkbestandpad)
+        Set Werkbestanden = Workbooks(WerkbNaam)
+    End If
+Else
+    If MsgBox("Wil je stoppen?", vbYesNo) = vbYes Then 'Give the user the option to stop executing the macro
+        Exit Sub
+    Else
+        GoTo Opendoen 'return to file selection
+    End If
+End If
+
+KiesFolderOpslag:
+
+FolderPad = GetFolder()
+If FolderPad = vbNullString Then
+    If MsgBox("Wil je stoppen?", vbYesNo) = vbYes Then 'Give the user the option to stop executing the macro
+        Werkbestanden.Close SaveChanges:=False
+        Exit Sub
+    Else
+        GoTo KiesFolderOpslag 'return to folder selection
+    End If
+End If
+
+DWM = "\TestDWM"
+
+'Save relevant worksheets to editable workbook.
+'Create new workbook and add blank sheets
+
+ActiveWorkbook.SaveCopyAs (FolderPad & DWM & "_analysebestanden.xlsx")
+
+Set Analysebestanden = Workbooks.Open(FolderPad & DWM & "_analysebestanden.xlsx")
+
+Werkbestanden.Close SaveChanges:=False
+
+Sheetnamen = LeesVar.Range("A2", LeesVar.Range("A2").End(xlDown)) 'array vullen met gegevens
+
+'Start analyse per blad
+For n = 1 To UBound(Sheetnamen)
+    
+    'variabelen initialiseren
+    Set AnalyseSheet = Analysebestanden.Sheets(Sheetnamen(n, 1))
+    RekenRange = LeesVar.Cells(n + 1, 2).Value
+    Rekendata = AnalyseSheet.Range(RekenRange) 'array vullen met gegevens
+    Berekeningen = LeesVar.Range("C2", LeesVar.Range("C2").End(xlDown)) 'array vullen met gegevens
+    EerstKolom = AnalyseSheet.Range(RekenRange).Columns(1).Column
+    LstKolom = AnalyseSheet.Range(RekenRange).Columns(Range(RekenRange).Columns.Count).Column
+    Set Hoofding = AnalyseSheet.Range(Cells(1, EerstKolom), Cells(1, LstKolom))
+    EerstKaart = 1
+    
+    'Grafieken ruwe data
+    For Each x In Range(RekenRange).Rows
+        Set Bronkaart = Union(Hoofding, x)
+        Bronkaart.Select
+        Set Kaart = AnalyseSheet.Shapes.AddChart2(227, xlLine)
+        Kaart.Chart.ChartTitle.Text = AnalyseSheet.Cells(x.Row, 1).Value & " " & AnalyseSheet.Cells(x.Row, 3).Value
+        LstKaart = LstKaart + 1
+    Next x
+    
+    Call MakeGridOfCharts(AnalyseSheet, EerstKaart, LstKaart, 10, AnalyseSheet.Range(RekenRange).Columns.Count / 2, 2, AnalyseSheet.Range(RekenRange).Rows(Range(RekenRange).Rows.Count).Row + 2, AnalyseSheet.Range(RekenRange).Columns(1).Column)
+    
+    'Start berekeningen blad
+    For b = 1 To UBound(Berekeningen)
+    
+        Set Arrayplak = AnalyseSheet.Cells(2, LstKolom + 1).Resize(UBound(Rekendata, 1), UBound(Rekendata, 2))
+        EerstKolom = Arrayplak.Columns(1).Column
+        LstKolom = Arrayplak.Columns(Arrayplak.Columns.Count).Column
+        AnalyseSheet.Range(Cells(1, EerstKolom), Cells(1, LstKolom)).Value = Hoofding.Value
+        For Each h In AnalyseSheet.Range(Cells(1, EerstKolom), Cells(1, LstKolom))
+            h.Value = Berekeningen(b, 1) & " " & h.Value 'hoofding
+        Next h
+        ReDim Aangroei(LBound(Rekendata, 1) To UBound(Rekendata, 1), LBound(Rekendata, 2) To UBound(Rekendata, 2))
+
+        'Kies berekening
+        Select Case b
+            Case 1
+                'Jaarlijkse aangroei
+                For r = 1 To UBound(Rekendata, 1)
+                    For c = 2 To UBound(Rekendata, 2)
+                        If Rekendata(r, c - 1) > 0 Then 'niet delen door 0
+                            Aangroei(r, c) = (Rekendata(r, c) - Rekendata(r, c - 1)) * 100 / Rekendata(r, c - 1)
+                        End If
+                    Next c
+                Next r
+                           
+            Case 2
+                'Aangroei tov N
+                For r = 1 To UBound(Rekendata, 1)
+                    For c = 1 To UBound(Rekendata, 2)
+                        If Rekendata(r, 4) > 0 Then 'N is de vierde kolom. Kan vervangen worden door variabele die uitgelezen wordt
+                            Aangroei(r, c) = (Rekendata(r, c) - Rekendata(r, 4)) * 100 / Rekendata(r, 4)
+                        End If
+                    Next c
+                Next r
+            
+            Case Else
+                'Vergeten formule toe te voegen
+                For r = 1 To UBound(Rekendata, 1)
+                    For c = 1 To UBound(Rekendata, 2)
+                            Aangroei(r, c) = "Formule ontbreekt"
+                    Next c
+                Next r
+        End Select
+        
+        'waarden plakken
+        Arrayplak.Value = Aangroei
+        
+        'Grafieken plakken
+        EerstKaart = LstKaart + 1
+        
+        For Each x In Arrayplak.Rows
+            Set Bronkaart = Union(AnalyseSheet.Range(Cells(1, EerstKolom), Cells(1, LstKolom)), x)
+            Bronkaart.Select
+            Set Kaart = AnalyseSheet.Shapes.AddChart2(227, xlLine)
+            Kaart.Chart.ChartTitle.Text = Berekeningen(b, 1) & " " & AnalyseSheet.Cells(x.Row, 1).Value & " " & AnalyseSheet.Cells(x.Row, 3).Value
+            LstKaart = LstKaart + 1
+        Next x
+        
+        Call MakeGridOfCharts(AnalyseSheet, EerstKaart, LstKaart, 10, Arrayplak.Columns.Count / 2, 2, Arrayplak.Rows(Arrayplak.Rows.Count).Row + 2, Arrayplak.Columns(1).Column)
+        
+    
+    Next b
+
+Next n
+
+End Sub
