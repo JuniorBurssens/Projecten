@@ -1,0 +1,59 @@
+Function IsWorkBookOpen(FileName As String)
+'Not my code, don't remember where I got it
+    Dim ff As Long, ErrNo As Long
+
+    On Error Resume Next
+    ff = FreeFile()
+    Open FileName For Input Lock Read As #ff
+    Close ff
+    ErrNo = Err
+    On Error GoTo 0
+
+    Select Case ErrNo
+    Case 0:    IsWorkBookOpen = False
+    Case 70:   IsWorkBookOpen = True
+    Case Else: Error ErrNo
+    End Select
+End Function
+
+Function GetFolder() As String
+'Not my code, don't remember where I got it
+    Dim fldr As FileDialog
+     
+    Set fldr = Application.FileDialog(msoFileDialogFolderPicker)
+     
+    With fldr
+        .Title = "Selecteer de map om de werkbestanden op te slaan"
+        .AllowMultiSelect = False
+        .InitialFileName = Application.DefaultFilePath
+        If .Show <> -1 Then GoTo NextCode
+         
+        GetFolder = .SelectedItems(1)
+         
+    End With
+     
+NextCode:
+     
+    Set fldr = Nothing
+     
+End Function
+
+Sub GetRangeList()
+'Some code I wrote to generate a list of range addresses
+    Dim SelectedRange As Range
+    Dim DoMore As Integer
+    Dim NextRange As Long
+    Dim Antw As String
+    
+    NextRange = 0
+    
+    Do
+        Set SelectedRange = Application.InputBox("Select range", Type:=8)
+        ActiveCell.Offset(NextRange, 0).Value = SelectedRange.Address(False, False)
+        NextRange = NextRange + 1
+        Antw = MsgBox("Do you want to select a range?", vbYesNo)
+        If Antw = vbNo Then Exit Sub
+    Loop While Antw = vbYes
+    
+    
+End Sub
