@@ -60,8 +60,7 @@ Next
 
 KiesFolderOpslag:
 
-FolderPad = "Z:\Afd_ENT\05_04_WaReg\02_Drinkwatermaatschappijen\Tariefplan\Controle-instrumentarium\Scripts gegevens en formules\Testresultaten"
-'FolderPad = GetFolder()
+FolderPad = GetFolder()
 If FolderPad = vbNullString Then
     If MsgBox("Wil je stoppen?", vbYesNo) = vbYes Then 'Give the user the option to stop executing the macro
         Sjabloon.Close SaveChanges:=False
