@@ -131,6 +131,10 @@ For n = 1 To UBound(Bladnamen, 1)
             On Error GoTo 0
         End If
         
+        If DoelSheet = "T221a" Then 'verwijderen (lege) rijen uit samengevoegde cellen
+            Werkbestanden.Sheets(DoelSheet).Range("E:E").SpecialCells(xlCellTypeBlanks).EntireRow.Delete
+        End If
+        
         'Toevoegen subtitels in kolom B.
         If Not IsEmpty(LeesVar.Cells(2, LeesStart + 3).Value) Then '!Indien er geen subtitels zijn
             For t = 1 To UBound(Subtitels, 1)
