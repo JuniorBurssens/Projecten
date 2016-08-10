@@ -60,7 +60,8 @@ Next
 
 KiesFolderOpslag:
 
-FolderPad = GetFolder()
+FolderPad = "Z:\Afd_ENT\05_04_WaReg\02_Drinkwatermaatschappijen\Tariefplan\Controle-instrumentarium\Scripts gegevens en formules\Testresultaten"
+'FolderPad = GetFolder()
 If FolderPad = vbNullString Then
     If MsgBox("Wil je stoppen?", vbYesNo) = vbYes Then 'Give the user the option to stop executing the macro
         Sjabloon.Close SaveChanges:=False
@@ -93,46 +94,30 @@ For n = 1 To UBound(Bladnamen, 1)
     DoelSheet = Bladnamen(n, 1)
     DoelRange = LeesVar.Range(LeesVar.Cells(2, LeesStart + 1), LeesVar.Cells(LeesVar.Rows.Count, LeesStart + 1).End(xlUp))
     Hoofding = LeesVar.Range(LeesVar.Cells(2, LeesStart + 2), LeesVar.Cells(LeesVar.Rows.Count, LeesStart + 2).End(xlUp))
-    Set DataSubtitel = LeesVar.Range(LeesVar.Cells(2, LeesStart + 3), LeesVar.Cells(LeesVar.Rows.Count, LeesStart + 3).End(xlUp))
-    If DataSubtitel.Cells.Count = 1 Then 'opvangen van range met 1 cel
-        ReDim Subtitels(1 To 1, 1 To 1)
-        Subtitels(1, 1) = DataSubtitel.Value
-        ReDim SubtitelRange(1 To 1, 1 To 1)
-        SubtitelRange(1, 1) = DataSubtitel.Offset(0, 1).Value
-    Else
-        Subtitels = LeesVar.Range(LeesVar.Cells(2, LeesStart + 3), LeesVar.Cells(LeesVar.Rows.Count, LeesStart + 3).End(xlUp))
-        SubtitelRange = LeesVar.Range(LeesVar.Cells(2, LeesStart + 4), LeesVar.Cells(LeesVar.Rows.Count, LeesStart + 4).End(xlUp))
+    If Not IsEmpty(LeesVar.Cells(2, LeesStart + 3).Value) Then '!Indien er geen subtitels zijn
+        Set DataSubtitel = LeesVar.Range(LeesVar.Cells(2, LeesStart + 3), LeesVar.Cells(LeesVar.Rows.Count, LeesStart + 3).End(xlUp))
+        If DataSubtitel.Cells.Count = 1 Then 'opvangen van range met 1 cel
+            ReDim Subtitels(1 To 1, 1 To 1)
+            Subtitels(1, 1) = DataSubtitel.Value
+            ReDim SubtitelRange(1 To 1, 1 To 1)
+            SubtitelRange(1, 1) = DataSubtitel.Offset(0, 1).Value
+        Else
+            Subtitels = LeesVar.Range(LeesVar.Cells(2, LeesStart + 3), LeesVar.Cells(LeesVar.Rows.Count, LeesStart + 3).End(xlUp))
+            SubtitelRange = LeesVar.Range(LeesVar.Cells(2, LeesStart + 4), LeesVar.Cells(LeesVar.Rows.Count, LeesStart + 4).End(xlUp))
+        End If
     End If
     Werkbestanden.Sheets(n).Name = DoelSheet
     Werkbestanden.Sheets(DoelSheet).Activate
     
-    ' If BronSheet <> "T220" Then 'opvangen long formaat T220
-        
         'Hoofding invoegen in werkbestand
         For k = 1 To UBound(Hoofding, 1)
             Werkbestanden.Sheets(DoelSheet).Range("A1").Offset(0, k - 1).Value = Hoofding(k, 1)
         Next k
-        
-        If BronSheet = "T220" Then 'maken nieuwe ID voor T220 (hergebruiken indien alles nieuw ID moet krijgen)
-            With Werkbestanden.Sheets(DoelSheet).Range("A2")
-                .Value = "T220a001"
-                .AutoFill .Resize(28, 1), xlFillSeries
-            End With
-            'eenheid uitvullen
-            With Werkbestanden.Sheets(DoelSheet).Range("E2")
-                .Value = "m"
-                .AutoFill .Resize(28, 1), xlFillCopy
-            End With
-            'Uitbreiding/vervanging uitvullen
-            Werkbestanden.Sheets(DoelSheet).Range("D2").Value = "Uitbreiding"
-            Werkbestanden.Sheets(DoelSheet).Range("D3").Value = "Vervanging"
-            Werkbestanden.Sheets(DoelSheet).Range("D2:D3").AutoFill Destination:=Werkbestanden.Sheets(DoelSheet).Range("D2:D29"), Type:=xlFillCopy
-        End If
-        
+         
         'Plaatsen data in werkbestand
         For r = 1 To UBound(BronRange, 1)
             Set TeKopieren = Sjabloon.Sheets(BronSheet).Range(BronRange(r, 1))
-            If BronSheet = "T220" Then 'opvangen long formaat in T220
+            If DoelSheet = "T220a" Then 'Van long naar wide formaat voor T220a
                 TeKopieren.Copy
                 Werkbestanden.Sheets(DoelSheet).Range(DoelRange(r, 1)).PasteSpecial Transpose:=True, Paste:=xlPasteValues
             Else
@@ -140,18 +125,25 @@ For n = 1 To UBound(Bladnamen, 1)
             End If
         Next r
         
-        'Verwijderen lege rijen op basis van lege cellen in kolom A
-        On Error Resume Next
-        Werkbestanden.Sheets(DoelSheet).Range("A:A").SpecialCells(xlCellTypeBlanks).EntireRow.Delete
-        On Error GoTo 0
+        If Not BronSheet = "T220" Then
+            'Verwijderen lege rijen op basis van lege cellen in kolom A (Data zonder ID, zoals in T220a en T220b wordt al zonder lege rijen toegevoegd)
+            On Error Resume Next
+            Werkbestanden.Sheets(DoelSheet).Range("A:A").SpecialCells(xlCellTypeBlanks).EntireRow.Delete
+            On Error GoTo 0
+        End If
         
         'Toevoegen subtitels in kolom B.
-        For t = 1 To UBound(Subtitels, 1)
-            Werkbestanden.Sheets(DoelSheet).Range(SubtitelRange(t, 1)).Value = Subtitels(t, 1)
-        Next t
-'    Else
-'
-'    End If
+        If Not IsEmpty(LeesVar.Cells(2, LeesStart + 3).Value) Then '!Indien er geen subtitels zijn
+            For t = 1 To UBound(Subtitels, 1)
+                Werkbestanden.Sheets(DoelSheet).Range(SubtitelRange(t, 1)).Value = Subtitels(t, 1)
+            Next t
+        End If
+        
+        If BronSheet = "T220" Then 'maken nieuwe ID voor T220 gebaseerd op einde kolom B (hergebruiken indien alles nieuw ID moet krijgen)
+            With Werkbestanden.Sheets(DoelSheet).Range("A2")
+                .AutoFill .Resize(Werkbestanden.Sheets(DoelSheet).Range("B1").End(xlDown).Row - 1, 1), xlFillSeries
+            End With
+        End If
 Next n
 
 Sjabloon.Close SaveChanges:=False
