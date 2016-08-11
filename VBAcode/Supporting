@@ -41,19 +41,19 @@ End Function
 Sub GetRangeList()
 'Some code I wrote to generate a list of range addresses
     Dim SelectedRange As Range
-    Dim DoMore As Integer
     Dim NextRange As Long
-    Dim Antw As String
     
     NextRange = 0
     
     Do
+        On Error Resume Next
         Set SelectedRange = Application.InputBox("Select range", Type:=8)
+        If Err.Number = 424 Then Exit Sub
+        On Error GoTo 0
         ActiveCell.Offset(NextRange, 0).Value = SelectedRange.Address(False, False)
         NextRange = NextRange + 1
-        Antw = MsgBox("Do you want to select a range?", vbYesNo)
-        If Antw = vbNo Then Exit Sub
-    Loop While Antw = vbYes
+    Loop
     
     
 End Sub
+
