@@ -98,10 +98,12 @@ Next
 'adapted from http://www.thespreadsheetguru.com/the-code-vault/2014/10/10/break-all-external-links-excel
 
 ExtLinks = Dplan.LinkSources(Type:=xlLinkTypeExcelLinks)
-For Conn = 1 To UBound(ExtLinks)
-    Dplan.Activate
-    Dplan.BreakLink Name:=ExtLinks(Conn), Type:=xlLinkTypeExcelLinks
-Next Conn
+If Not IsEmpty(ExtLinks) Then
+    For Conn = 1 To UBound(ExtLinks)
+        Dplan.Activate
+        Dplan.BreakLink Name:=ExtLinks(Conn), Type:=xlLinkTypeExcelLinks
+    Next Conn
+End If
 
 'loop sheets
 Sjabloon.Activate
