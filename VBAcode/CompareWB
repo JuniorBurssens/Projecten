@@ -12,6 +12,8 @@ Dim DplanPad As String
 Dim DplanNaam As String
 Dim Dplan As Workbook
 Dim Blad As Worksheet
+Dim ExtLinks As Variant
+Dim Conn As Long
 Dim BladIndex As Integer
 Dim LsteRij As Long
 Dim LsteKol As Long
@@ -60,12 +62,13 @@ Vergelijken.Activate
 MsgBox "Selecteer het tariefplan van de watermaatschappij" 'So users know to select the changed file
 Application.FileDialog(msoFileDialogOpen).InitialFileName = ActiveWorkbook.Path
 Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False
+Application.FileDialog(msoFileDialogOpen).Title = "Selecteer het tariefplan"
 AnnulOfOK = Application.FileDialog(msoFileDialogOpen).Show
 
 If AnnulOfOK <> 0 Then
     DplanPad = Application.FileDialog(msoFileDialogOpen).SelectedItems(1)
     If Not IsWorkBookOpen(DplanPad) Then
-        Set Dplan = Workbooks.Open(DplanPad)
+        Set Dplan = Workbooks.Open(DplanPad, False)
     Else
         DplanNaam = Dir(DplanPad)
         Set Dplan = Workbooks(DplanNaam)
@@ -78,18 +81,27 @@ Else
     End If
 End If
 
-Vergelijken.Activate
-Application.ScreenUpdating = False
+FolderResultaat = GetFolder()
+If FolderResultaat = vbNullString Then
+        MsgBox "Er wordt geen kopie opgeslagen van de controle", vbExclamation, "Error"
+End If
 
-Vergelijken.Cells(1, 1).Value = "Locatie sjabloon: " & Sjabloonpad
-Vergelijken.Cells(2, 1).Value = "Locatie tariefplan: " & DplanPad
-Vergelijken.Cells(3, 1).Value = "Voortgang"
-Vergelijken.Cells(4, 1).Value = "Gemarkeerde cellen"
+Application.ScreenUpdating = False
 
 Dplan.Activate
 For Each Blad In Dplan.Worksheets
     Blad.Unprotect
+    Blad.Visible = xlSheetVisible
 Next
+
+'remove external links
+'adapted from http://www.thespreadsheetguru.com/the-code-vault/2014/10/10/break-all-external-links-excel
+
+ExtLinks = Dplan.LinkSources(Type:=xlLinkTypeExcelLinks)
+For Conn = 1 To UBound(ExtLinks)
+    Dplan.Activate
+    Dplan.BreakLink Name:=ExtLinks(Conn), Type:=xlLinkTypeExcelLinks
+Next Conn
 
 'loop sheets
 Sjabloon.Activate
@@ -133,24 +145,32 @@ For Each Blad In Sjabloon.Worksheets
             If Not IsEmpty(SjabArr(r, c)) Then
                 If SjabArr(r, c) <> DplanArr(r, c) Then
                     Bereik.Cells(r, c).Interior.Color = vbRed
-                    ResCol.Add Dplan.Sheets(BladIndex).Name & "!" & Cells(r, c).Address
+                    ResCol.Add Dplan.Sheets(BladIndex).Name & "!" & Cells(r, c).Address(False, False)
                 End If
             End If
         Next c
     Next r
 
-Vergelijken.Activate
-Application.ScreenUpdating = True
-Vergelijken.Cells(4, BladIndex + 1).Value = Dplan.Sheets(BladIndex).Name
-Application.ScreenUpdating = False
+If Blad.Name = "T500" Then
+    Exit For
+End If
 
 Next Blad
 
-'Alle gemarkeerde cellen oplijsten
-Vergelijken.Activate
+Dplan.Activate
+Dplan.Sheets.Add(Before:=Worksheets(1)).Name = "Resultaat"
+Dplan.Worksheets("Resultaat").Cells(1, 1).Value = "Locatie origineel sjabloon: " & Sjabloonpad
+Dplan.Worksheets("Resultaat").Cells(2, 1).Value = "Locatie tariefplan: " & DplanPad
+Dplan.Worksheets("Resultaat").Cells(4, 1).Value = "Gemarkeerde cellen"
 For i = 1 To ResCol.Count
-    Vergelijken.Cells(i + 4, 1).Value = ResCol(i)
+    Dplan.Worksheets("Resultaat").Cells(i + 4, 1).Value = ResCol(i)
 Next i
+
+ActiveWorkbook.SaveCopyAs (FolderResultaat & "\Resultaat vergelijking consultatie.xlsx")
+
+Dplan.Close SaveChanges:=False
+Sjabloon.Close SaveChanges:=False
+
 
 Application.ScreenUpdating = True
 
@@ -162,6 +182,7 @@ Application.ScreenUpdating = True
 MsgBox "Gedaan!"
 
 End Sub
+
 
 Function IsWorkBookOpen(FileName As String)
 'Function copied from the answer on SO by Siddharth Rout: http://stackoverflow.com/a/9373914
