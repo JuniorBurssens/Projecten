@@ -1,5 +1,6 @@
 Sub Werkbestanden()
 
+Dim oldStatusBar As Boolean
 Dim LeesVar As Worksheet
 Dim AnnulOfOK As Long
 Dim Sjabloonpad As String
@@ -27,6 +28,11 @@ Dim Subtitels() As Variant
 Dim SubtitelRange() As Variant
 Dim t As Long
 
+oldStatusBar = Application.DisplayStatusBar
+Application.DisplayStatusBar = True
+Application.ScreenUpdating = False
+Application.Calculation = xlCalculationManual
+
 Set LeesVar = ActiveWorkbook.ActiveSheet
 
 'open the files with a dialog
@@ -40,7 +46,7 @@ AnnulOfOK = Application.FileDialog(msoFileDialogOpen).Show 'Returns 0 when cance
 If AnnulOfOK <> 0 Then 'check for cancelling
     Sjabloonpad = Application.FileDialog(msoFileDialogOpen).SelectedItems(1) 'set path to file
     If Not IsWorkBookOpen(Sjabloonpad) Then
-        Set Sjabloon = Workbooks.Open(Sjabloonpad) 'open file
+        Set Sjabloon = Workbooks.Open(Sjabloonpad, False) 'open file
     Else
         SjabNaam = Dir(Sjabloonpad)
         Set Sjabloon = Workbooks(SjabNaam)
@@ -124,7 +130,8 @@ For n = 1 To UBound(Bladnamen, 1)
             End If
         Next r
         
-        If Not BronSheet = "T220" Then
+        If BronSheet = "T220" Or BronSheet = "T400" Or BronSheet = "T500" Then
+        Else
             'Verwijderen lege rijen op basis van lege cellen in kolom A (Data zonder ID, zoals in T220a en T220b wordt al zonder lege rijen toegevoegd)
             On Error Resume Next
             Werkbestanden.Sheets(DoelSheet).Range("A:A").SpecialCells(xlCellTypeBlanks).EntireRow.Delete
@@ -132,7 +139,10 @@ For n = 1 To UBound(Bladnamen, 1)
         End If
         
         If DoelSheet = "T221a" Then 'verwijderen (lege) rijen uit samengevoegde cellen
-            Werkbestanden.Sheets(DoelSheet).Range("E:E").SpecialCells(xlCellTypeBlanks).EntireRow.Delete
+            Werkbestanden.Sheets(DoelSheet).Rows(3).EntireRow.Delete
+            Werkbestanden.Sheets(DoelSheet).Rows(4).EntireRow.Delete
+            Werkbestanden.Sheets(DoelSheet).Rows(6).EntireRow.Delete
+            Werkbestanden.Sheets(DoelSheet).Rows(7).EntireRow.Delete
         End If
         
         'Toevoegen subtitels in kolom B.
@@ -142,14 +152,24 @@ For n = 1 To UBound(Bladnamen, 1)
             Next t
         End If
         
-        If BronSheet = "T220" Then 'maken nieuwe ID voor T220 gebaseerd op einde kolom B (hergebruiken indien alles nieuw ID moet krijgen)
+        If BronSheet = "T220" Or BronSheet = "T400" Or BronSheet = "T500" Then 'maken nieuwe ID voor T220, T400 en T500 gebaseerd op einde kolom B (hergebruiken indien alles nieuw ID moet krijgen)
             With Werkbestanden.Sheets(DoelSheet).Range("A2")
                 .AutoFill .Resize(Werkbestanden.Sheets(DoelSheet).Range("B1").End(xlDown).Row - 1, 1), xlFillSeries
             End With
         End If
+'Application.ScreenUpdating = True
+'Application.StatusBar = DoelSheet
+'Application.ScreenUpdating = False
 Next n
 
 Sjabloon.Close SaveChanges:=False
 Werkbestanden.Close SaveChanges:=True
+
+Application.ScreenUpdating = True
+Application.StatusBar = False
+Application.DisplayStatusBar = oldStatusBar
+Application.Calculation = xlCalculationAutomatic
+
+MsgBox "Gedaan!"
 
 End Sub
