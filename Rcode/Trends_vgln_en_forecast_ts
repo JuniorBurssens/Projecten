@@ -1,0 +1,43 @@
+#We gaan in dit voorbeeld uit van een gelijke trend tussen T200044 en T200046. 
+#Het voorbeeld is gekozen omdat de cijfers gelijkaardig zijn (in grootte en qua verloop), maar niet exact hetzelfde.
+#Er werd ook getest met eigen gegenereerde data (zowel random als met seq())
+
+#VERGELIJKEN TRENDS
+
+#Inlezen data
+T200044 <- c(10 WAARDEN) #VAR1
+T200064 <- c(10 WAARDEN) #VAR2
+jaren <- seq(2013,2022,1) #jaren overeenkomstig de data
+dumvar <- c(rep(1,10),rep(0,10)) #dummy met 1 voor de eerste variabele
+
+#Datasets maken
+xwaarden <- c(T200044,T200064) #1 samengestelde variabele.
+ywaarden <- rep(jaren,2) #regresseren op de jaren, dus evenveel herhalen als het aantal variabelen
+
+#Model schatten
+
+GelijkeTrend <- lm(ywaarden ~ xwaarden + xwaarden*dumvar) 
+
+summary(GelijkeTrend) #wanneer interactie significant is, dan zijn de trends niet gelijk. In dit voorbeeld kunnen we gelijke trends veronderstellen. 
+plot(GelijkeTrend$model)
+
+#We zouden in principe ook met de chow test kunnen werken, maar het is omslachtiger. Ik heb wel al de code om structural breaks iteratief op te sporen:
+# OPSPOREN STRUCTURAL BREAKS
+library("strucchange")
+ts44 <- ts(T200044,2013,2022,1) #converteer list naar time series
+plot.ts(ts44,type="l")
+bpoints <- breakpoints(ts44~1, h = 2) #toont mogelijke breekpunten. Kortste segment is het aantal regressors + 1. Blijkbaar zeer gevoelig aan verandering in de trend en uiteraard afhankelijk van de omvang van het gebruikte segment. Met de nodige reserve gebruiken in korte reeksen.
+lines(bpoints) #duidt de breekpunten aan in de plot
+
+#VOORSPELLEN TIJDREEKS
+
+library("forecast")
+ts44 <- ts(T200044,2013,2022,1) #converteer list naar time series10 jaar te voospellen
+#voorbeeld waarbij de gerapporteerde 10 jaar gebruikt worden om de volgende 
+forecast(ts44, h=10) #exponential time-series forecast
+forecast(auto.arima(ts44),h=10)
+plot(forecast(ts44, h=10)) #ets plot
+plot(forecast(auto.arima(ts44), h=10)) #arima plot
+#voorbeeld met de eerste 3 jaar om de volgende 7 te voorspellen
+forecast(window(ts44,2013,2015), h=7)
+plot(forecast(window(ts44,2013,2015), h=7))
