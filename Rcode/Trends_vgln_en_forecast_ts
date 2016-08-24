@@ -10,6 +10,9 @@ T200064 <- c(10 WAARDEN) #VAR2
 jaren <- seq(2013,2022,1) #jaren overeenkomstig de data
 dumvar <- c(rep(1,10),rep(0,10)) #dummy met 1 voor de eerste variabele
 
+plot(jaren,T200044,type="l",ylim=c(min(c(T200044,T200064)),max(c(T200044,T200064))),ylab="")
+lines(jaren,T200064, col="red")
+
 #Datasets maken
 xwaarden <- c(T200044,T200064) #1 samengestelde variabele.
 ywaarden <- rep(jaren,2) #regresseren op de jaren, dus evenveel herhalen als het aantal variabelen
