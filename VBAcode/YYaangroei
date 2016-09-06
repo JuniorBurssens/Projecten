@@ -34,6 +34,7 @@ End If
 Werkbestanden.Activate
 
 BereikenPerc.Show
+
 End Sub
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Private Sub Annuleer1_Click()
@@ -44,7 +45,6 @@ End Sub
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Private Sub OK1_Click()
 
-Dim RekenRange As Range
 Dim ColRij As New Collection
 Dim BijRange() As String
 Dim Ar As Long
@@ -61,19 +61,33 @@ Dim Arrayplak As Range
 Dim Hoofding As Range
 Dim PlakCol As Long
 Dim i As Long
+Dim ResWB As Workbook
+Dim CijferBlad As Worksheet
+Dim Grafiektype As Long
+Dim GrafBlad As Worksheet
+Dim RekenRange As Range
+Dim EerstKolom As Long
+Dim EerstKaart As Long
+Dim LstKaart As Long
+Dim x As Range
+Dim Kaart As Shape
+Dim Bronkaart As Range
 
-'On Error GoTo BadRange
+Set Werkmap = ActiveWorkbook
+    
+On Error GoTo BadRange
 
 'Variabelen instellen
 If BereikenPerc.RefEdit1.Text <> "" Then
     BijRange = Split(BereikenPerc.RefEdit1.Text, ";")
     Set Blad = Worksheets(Range(BijRange(0)).Parent.Name)
-    Set Werkmap = Workbooks(Blad.Parent.Name)
     Werkmap.Activate
     Blad.Activate
     For Ar = 0 To UBound(BijRange)
         Rijen = Rijen + Range(BijRange(Ar)).Rows.Count
     Next Ar
+Else
+    GoTo BadRange
 End If
 
 Set Hoofding = Range(Cells(1, Range(BijRange(0)).Columns(1).Column), Cells(1, Range(BijRange(0)).Columns(Range(BijRange(0)).Columns.Count).Column))
@@ -92,6 +106,8 @@ For Ar = 0 To UBound(BijRange)
             Next c
             r = r + 1
         Next Rij
+    Else
+        GoTo BadRange
     End If
 Next Ar
 
@@ -105,25 +121,146 @@ For r = 1 To UBound(Rekendata, 1)
 Next r
 
 'Waarden plakken
-Workbooks.Add
+Set ResWB = Workbooks.Add
+Set CijferBlad = ActiveSheet
+CijferBlad.Name = "Cijfers"
 For i = 1 To ColRij.Count
-    ActiveSheet.Cells(i + 1, 1).Value = ColRij(i)
+    CijferBlad.Cells(i + 1, 1).Value = ColRij(i)
 Next i
 PlakCol = 1 + 1
 For c = 1 To UBound(Rekendata, 2)
-    ActiveSheet.Range(Cells(1, PlakCol).Address) = "YY " & Hoofding(1, c).Value
-    ActiveSheet.Range(Cells(1, PlakCol + 1).Address) = Hoofding(1, c).Value
+    CijferBlad.Range(Cells(1, PlakCol).Address) = "YY " & Hoofding(1, c).Value
+    CijferBlad.Range(Cells(1, PlakCol + 1).Address) = Hoofding(1, c).Value
     For r = 1 To UBound(Rekendata, 1)
-        ActiveSheet.Range(Cells(r + 1, PlakCol).Address) = Aangroei(r, c)
-        ActiveSheet.Range(Cells(r + 1, PlakCol + 1).Address) = Rekendata(r, c)
+        CijferBlad.Range(Cells(r + 1, PlakCol).Address) = Aangroei(r, c)
+        CijferBlad.Range(Cells(r + 1, PlakCol + 1).Address) = Rekendata(r, c)
     Next r
     PlakCol = PlakCol + 2
 Next c
+
+If Not OptionGeen.Value Then
+
+    If OptionLijn.Value Then Grafiektype = 4
+    If OptionKolom.Value Then Grafiektype = 51
+
+    Set GrafBlad = ResWB.Sheets.Add(after:=Worksheets(1))
+    GrafBlad.Name = "Grafieken"
+    GrafBlad.Activate
+    For i = 1 To ColRij.Count
+        GrafBlad.Cells(i + 1, 1).Value = ColRij(i)
+    Next i
+    
+    GrafBlad.Range(Cells(1, 2), Cells(1, Hoofding.Count + 1)) = Hoofding.Value
+    Set RekenRange = GrafBlad.Range(Cells(2, 2), Cells(1 + UBound(Rekendata, 1), 1 + UBound(Rekendata, 2)))
+    RekenRange.Value = Rekendata
+    
+    'Grafieken ruwe data
+    EerstKaart = 1
+    For Each x In RekenRange.Rows
+        Set Bronkaart = Union(GrafBlad.Range(Cells(1, 2), Cells(1, Hoofding.Count + 1)), x) 'headers+datarow
+        Bronkaart.Select
+        Set Kaart = GrafBlad.Shapes.AddChart2(227, Grafiektype)
+        Kaart.Chart.ChartTitle.Text = GrafBlad.Cells(x.Row, 1).Value
+        LstKaart = LstKaart + 1
+    Next x
+    
+    Call MakeGridOfCharts(GrafBlad, EerstKaart, LstKaart, 10, RekenRange.Columns.Count / 2, 2, RekenRange.Rows(RekenRange.Rows.Count).Row + 2, RekenRange.Columns(1).Column)
+    
+    EerstKolom = UBound(Rekendata, 2) + 2
+    For c = 1 To Hoofding.Count
+        GrafBlad.Cells(1, EerstKolom + c - 1).Value = "YY " & Hoofding(1, c).Value
+    Next c
+    Set RekenRange = GrafBlad.Range(Cells(2, EerstKolom), Cells(1 + UBound(Aangroei, 1), EerstKolom + UBound(Aangroei, 2) - 1))
+    RekenRange.Value = Aangroei
+    
+    'Grafieken berekende data
+    EerstKaart = LstKaart + 1
+    For Each x In RekenRange.Rows
+        Set Bronkaart = Union(GrafBlad.Range(Cells(1, EerstKolom), Cells(1, EerstKolom + Hoofding.Count - 1)), x) 'headers+datarow
+        Bronkaart.Select
+        Set Kaart = GrafBlad.Shapes.AddChart2(227, Grafiektype)
+        Kaart.Chart.ChartTitle.Text = GrafBlad.Cells(x.Row, 1).Value
+        LstKaart = LstKaart + 1
+    Next x
+    
+    Call MakeGridOfCharts(GrafBlad, EerstKaart, LstKaart, 10, RekenRange.Columns.Count / 2, 2, RekenRange.Rows(RekenRange.Rows.Count).Row + 2, RekenRange.Columns(1).Column)
+    
+End If
 
 Unload BereikenPerc
 Exit Sub
 
 BadRange:
     MsgBox "Ongeldig bereik gekozen. Kijk na of het gekozen bereik correct is."
+    BereikenPerc.RefEdit1.SetFocus
+End Sub
+
+Sub MakeGridOfCharts(AnalyseSheet As Worksheet, EerstKaart As Long, LstKaart As Long, nRowsTall As Long, nColsWide As Long, nChartsPerRow As Long, nFirstRow As Long, nFirstCol As Long)
+'Adapted sub to pass variables from other sub
+  ' Original code by Jon Peltier (3/19/2008, mod 10/03/2014)
+  ' http://peltiertech.com/
+
+  ' chart size - adjust as desired
+  ' set one or both to zero to use dimensions of active chart
+  '   (or first chart if no chart is active)
+  'Const nRowsTall As Long = 10
+  'Const nColsWide As Long = 5
+
+  ' chart layout - adjust as desired
+  'Const nChartsPerRow As Long = 2
+  Const nSkipRows As Long = 0
+  Const nSkipCols As Long = 0
+  'Const nFirstRow As Long = 60
+  'Const nFirstCol As Long = 5
+
+  Dim iChart As Long
+  Dim chtob As ChartObject
+  Dim dWidth As Double
+  Dim dHeight As Double
+  Dim rData As Range
+  Dim dFirstChartTop As Double
+  Dim dFirstChartLeft As Double
+  Dim dRowsBetweenChart As Double
+  Dim dColsBetweenChart As Double
+  Dim Counter As Long
+
+  If AnalyseSheet.ChartObjects.Count > 0 Then
+
+    With AnalyseSheet.Cells(nFirstRow, nFirstCol)
+      If nRowsTall * nColsWide > 0 Then
+        dWidth = nColsWide * .Width
+        dHeight = nRowsTall * .Height
+      Else
+        If Not ActiveChart Is Nothing Then
+          Set chtob = ActiveChart.Parent
+        Else
+          Set chtob = AnalyseSheet.ChartObjects(1)
+        End If
+        dWidth = chtob.Width
+        dHeight = chtob.Height
+      End If
+
+      dFirstChartLeft = .Left
+      dFirstChartTop = .Top
+      dRowsBetweenChart = nSkipRows * .Height
+      dColsBetweenChart = nSkipCols * .Width
+    End With
+
+    For iChart = EerstKaart To LstKaart
+
+      Set chtob = AnalyseSheet.ChartObjects(iChart)
+      Counter = Counter + 1
+      With chtob
+        .Left = ((Counter - 1) Mod nChartsPerRow) * _
+            (dWidth + dColsBetweenChart) + dFirstChartLeft
+        .Top = Int((Counter - 1) / nChartsPerRow) * _
+            (dHeight + dRowsBetweenChart) + dFirstChartTop
+        .Width = dWidth
+        .Height = dHeight
+      End With
+
+    Next
+
+  End If
 
 End Sub
