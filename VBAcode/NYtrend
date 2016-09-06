@@ -1,0 +1,324 @@
+'This VBA script calculates the trend in percent from a chosen base year for any number of non contiguous ranges in a worksheet (requires same number of columns though)
+Sub NYtrend()
+
+'The sub opens the datafile and initiates the userform (code below)
+
+Dim AnnulOfOK As Long
+Dim Werkbestandpad As String
+Dim WerkbNaam As String
+Dim Werkbestanden As Workbook
+
+Opendoen:
+
+MsgBox "Selecteer het bestand met gegevens" 'So users know to select the file
+Application.FileDialog(msoFileDialogOpen).InitialFileName = ActiveWorkbook.Path 'Open the file dialog in the same path of the macro
+Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False 'Only 1 file can be selected or you won't know what's what
+AnnulOfOK = Application.FileDialog(msoFileDialogOpen).Show 'Returns 0 when cancelled 1 when selected
+
+If AnnulOfOK <> 0 Then 'check for cancelling
+    Werkbestandpad = Application.FileDialog(msoFileDialogOpen).SelectedItems(1) 'set path to file
+    If Not IsWorkBookOpen(Werkbestandpad) Then
+        Set Werkbestanden = Workbooks.Open(Werkbestandpad) 'open file
+    Else
+        WerkbNaam = Dir(Werkbestandpad)
+        Set Werkbestanden = Workbooks(WerkbNaam)
+    End If
+Else
+    If MsgBox("Wil je stoppen?", vbYesNo) = vbYes Then 'Give the user the option to stop executing the macro
+        Exit Sub
+    Else
+        GoTo Opendoen 'return to file selection
+    End If
+End If
+
+Werkbestanden.Activate
+
+BereikenNY.Show
+
+End Sub
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Private Sub Annuleer1_Click()
+
+Unload BereikenNY
+
+End Sub
+
+
+Private Sub OK1_Click()
+
+Dim ColRij As New Collection
+Dim BijRange() As String
+Dim Ar As Long
+Dim Rijen As Long
+Dim Kolommen As Long
+Dim Rekendata() As Double
+Dim Rij As Long
+Dim Basisjaar As Long
+Dim r As Long
+Dim c As Long
+Dim Blad As Worksheet
+Dim Werkmap As Workbook
+Dim Aangroei() As Double
+Dim Arrayplak As Range
+Dim Hoofding As Range
+Dim PlakCol As Long
+Dim i As Long
+Dim ResWB As Workbook
+Dim CijferBlad As Worksheet
+Dim Grafiektype As Long
+Dim GrafBlad As Worksheet
+Dim RekenRange As Range
+Dim EerstKolom As Long
+Dim EerstKaart As Long
+Dim LstKaart As Long
+Dim x As Range
+Dim Kaart As Shape
+Dim Bronkaart As Range
+
+Set Werkmap = ActiveWorkbook
+    
+On Error GoTo BadRange
+
+'Variabelen instellen
+If BereikenNY.RefEdit1.Text <> "" Then
+    BijRange = Split(BereikenNY.RefEdit1.Text, ";")
+    Set Blad = Worksheets(Range(BijRange(0)).Parent.Name)
+    Werkmap.Activate
+    Blad.Activate
+    For Ar = 0 To UBound(BijRange)
+        Rijen = Rijen + Range(BijRange(Ar)).Rows.Count
+    Next Ar
+Else
+    GoTo BadRange
+End If
+
+Set Hoofding = Range(Cells(1, Range(BijRange(0)).Columns(1).Column), Cells(1, Range(BijRange(0)).Columns(Range(BijRange(0)).Columns.Count).Column))
+Kolommen = Range(BijRange(0)).Columns.Count
+ReDim Rekendata(1 To Rijen, 1 To Kolommen)
+ReDim Aangroei(LBound(Rekendata, 1) To UBound(Rekendata, 1), LBound(Rekendata, 2) To UBound(Rekendata, 2))
+
+If BereikenNY.RefEdit2.Text = "" Then
+    GoTo Leegrange
+End If
+
+If Range(BereikenNY.RefEdit2.Value).Columns.Count <> 1 Then
+    GoTo Kolomrange
+End If
+
+If Application.Intersect(Cells(1, Range(BereikenNY.RefEdit2.Value).Column), Hoofding) Is Nothing Then
+    GoTo Buitenrange
+End If
+
+Basisjaar = Range(BereikenNY.RefEdit2.Value).Column + 1 - Range(BijRange(0)).Columns(1).Column
+
+'Array vullen
+r = 1
+For Ar = 0 To UBound(BijRange)
+    If Range(BijRange(Ar)).Columns.Count = Kolommen Then
+        For Rij = 1 To Range(BijRange(Ar)).Rows.Count
+        ColRij.Add Cells(Range(BijRange(Ar)).Rows(Rij).Row, 1).Value
+            For c = 1 To UBound(Rekendata, 2)
+                Rekendata(r, c) = Range(BijRange(Ar)).Cells(Rij, c).Value
+            Next c
+            r = r + 1
+        Next Rij
+    Else
+        GoTo BadRange
+    End If
+Next Ar
+
+'Jaarlijkse aangroei
+For r = 1 To UBound(Rekendata, 1)
+    For c = 1 To UBound(Rekendata, 2)
+        If Rekendata(r, Basisjaar) > 0 Then
+            Aangroei(r, c) = (Rekendata(r, c) - Rekendata(r, Basisjaar)) * 100 / Rekendata(r, Basisjaar)
+        End If
+    Next c
+Next r
+
+'Waarden plakken
+Set ResWB = Workbooks.Add
+ResWB.Activate
+Set CijferBlad = ActiveSheet
+CijferBlad.Name = "Cijfers"
+For i = 1 To ColRij.Count
+    CijferBlad.Cells(i + 1, 1).Value = ColRij(i)
+Next i
+PlakCol = 1 + 1
+For c = 1 To UBound(Rekendata, 2)
+    CijferBlad.Range(Cells(1, PlakCol).Address) = "NY " & Hoofding(1, c).Value
+    CijferBlad.Range(Cells(1, PlakCol + 1).Address) = Hoofding(1, c).Value
+    For r = 1 To UBound(Rekendata, 1)
+        CijferBlad.Range(Cells(r + 1, PlakCol).Address) = Aangroei(r, c)
+        If Application.International(xlDecimalSeparator) = "." Then 'Error catching, format is dependent on language settings
+            CijferBlad.Range(Cells(r + 1, PlakCol).Address).NumberFormatLocal = "#,##0.00"
+        Else
+            CijferBlad.Range(Cells(r + 1, PlakCol).Address).NumberFormatLocal = "#.##0,00"
+        End If
+        CijferBlad.Range(Cells(r + 1, PlakCol + 1).Address) = Rekendata(r, c)
+        If Application.International(xlDecimalSeparator) = "." Then
+            CijferBlad.Range(Cells(r + 1, PlakCol + 1).Address).NumberFormatLocal = "#,##0"
+        Else
+            CijferBlad.Range(Cells(r + 1, PlakCol + 1).Address).NumberFormatLocal = "#.##0"
+        End If
+    Next r
+    PlakCol = PlakCol + 2
+Next c
+
+If Not OptionGeen.Value Then
+
+    If OptionLijn.Value Then Grafiektype = 4
+    If OptionKolom.Value Then Grafiektype = 51
+
+    Set GrafBlad = ResWB.Sheets.Add(after:=Worksheets(1))
+    GrafBlad.Name = "Grafieken"
+    GrafBlad.Activate
+    For i = 1 To ColRij.Count
+        GrafBlad.Cells(i + 1, 1).Value = ColRij(i)
+    Next i
+    
+    GrafBlad.Range(Cells(1, 2), Cells(1, Hoofding.Count + 1)) = Hoofding.Value
+    Set RekenRange = GrafBlad.Range(Cells(2, 2), Cells(1 + UBound(Rekendata, 1), 1 + UBound(Rekendata, 2)))
+    RekenRange.Value = Rekendata
+    If Application.International(xlDecimalSeparator) = "." Then
+        RekenRange.NumberFormatLocal = "#,##0"
+    Else
+        RekenRange.NumberFormatLocal = "#.##0"
+    End If
+
+    
+    'Grafieken ruwe data
+    EerstKaart = 1
+    For Each x In RekenRange.Rows
+        Set Bronkaart = Union(GrafBlad.Range(Cells(1, 2), Cells(1, Hoofding.Count + 1)), x) 'headers+datarow
+        Bronkaart.Select
+        Set Kaart = GrafBlad.Shapes.AddChart2(227, Grafiektype)
+        Kaart.Chart.ChartTitle.Text = GrafBlad.Cells(x.Row, 1).Value
+        LstKaart = LstKaart + 1
+    Next x
+    
+    Call MakeGridOfCharts(GrafBlad, EerstKaart, LstKaart, 10, RekenRange.Columns.Count / 2, 2, RekenRange.Rows(RekenRange.Rows.Count).Row + 2, RekenRange.Columns(1).Column)
+    
+    'Gegevens berekende data
+    EerstKolom = UBound(Rekendata, 2) + 2
+    For c = 1 To Hoofding.Count
+        GrafBlad.Cells(1, EerstKolom + c - 1).Value = "YY " & Hoofding(1, c).Value
+    Next c
+    Set RekenRange = GrafBlad.Range(Cells(2, EerstKolom), Cells(1 + UBound(Aangroei, 1), EerstKolom + UBound(Aangroei, 2) - 1))
+    RekenRange.Value = Aangroei
+    If Application.International(xlDecimalSeparator) = "." Then
+        RekenRange.NumberFormatLocal = "#,##0.00"
+    Else
+        RekenRange.NumberFormatLocal = "#.##0,00"
+    End If
+
+    'Grafieken berekende data
+    EerstKaart = LstKaart + 1
+    For Each x In RekenRange.Rows
+        Set Bronkaart = Union(GrafBlad.Range(Cells(1, EerstKolom), Cells(1, EerstKolom + Hoofding.Count - 1)), x) 'headers+datarow
+        Bronkaart.Select
+        Set Kaart = GrafBlad.Shapes.AddChart2(227, Grafiektype)
+        Kaart.Chart.ChartTitle.Text = GrafBlad.Cells(x.Row, 1).Value
+        LstKaart = LstKaart + 1
+    Next x
+    
+    Call MakeGridOfCharts(GrafBlad, EerstKaart, LstKaart, 10, RekenRange.Columns.Count / 2, 2, RekenRange.Rows(RekenRange.Rows.Count).Row + 2, RekenRange.Columns(1).Column)
+    
+End If
+
+Unload BereikenNY
+ResWB.Activate
+Exit Sub
+
+BadRange:
+    MsgBox "Ongeldig bereik gekozen. Kijk na of het gekozen bereik correct is."
+    BereikenNY.RefEdit1.SetFocus
+Exit Sub
+
+Leegrange:
+    MsgBox "De kolom met het basisjaar is leeg."
+    BereikenNY.RefEdit2.SetFocus
+Exit Sub
+
+Kolomrange:
+    MsgBox "Er zijn meerdere kolommen gekozen als basisjaar."
+    BereikenNY.RefEdit2.SetFocus
+Exit Sub
+
+Buitenrange:
+    MsgBox "De kolom voor het basisjaar ligt buiten het bereik van de rekenwaarden."
+    BereikenNY.RefEdit2.SetFocus
+Exit Sub
+
+End Sub
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Sub MakeGridOfCharts(AnalyseSheet As Worksheet, EerstKaart As Long, LstKaart As Long, nRowsTall As Long, nColsWide As Long, nChartsPerRow As Long, nFirstRow As Long, nFirstCol As Long)
+'Adapted sub to pass variables from other sub
+  ' Original code by Jon Peltier (3/19/2008, mod 10/03/2014)
+  ' http://peltiertech.com/
+
+  ' chart size - adjust as desired
+  ' set one or both to zero to use dimensions of active chart
+  '   (or first chart if no chart is active)
+  'Const nRowsTall As Long = 10
+  'Const nColsWide As Long = 5
+
+  ' chart layout - adjust as desired
+  'Const nChartsPerRow As Long = 2
+  Const nSkipRows As Long = 0
+  Const nSkipCols As Long = 0
+  'Const nFirstRow As Long = 60
+  'Const nFirstCol As Long = 5
+
+  Dim iChart As Long
+  Dim chtob As ChartObject
+  Dim dWidth As Double
+  Dim dHeight As Double
+  Dim rData As Range
+  Dim dFirstChartTop As Double
+  Dim dFirstChartLeft As Double
+  Dim dRowsBetweenChart As Double
+  Dim dColsBetweenChart As Double
+  Dim Counter As Long
+
+  If AnalyseSheet.ChartObjects.Count > 0 Then
+
+    With AnalyseSheet.Cells(nFirstRow, nFirstCol)
+      If nRowsTall * nColsWide > 0 Then
+        dWidth = nColsWide * .Width
+        dHeight = nRowsTall * .Height
+      Else
+        If Not ActiveChart Is Nothing Then
+          Set chtob = ActiveChart.Parent
+        Else
+          Set chtob = AnalyseSheet.ChartObjects(1)
+        End If
+        dWidth = chtob.Width
+        dHeight = chtob.Height
+      End If
+
+      dFirstChartLeft = .Left
+      dFirstChartTop = .Top
+      dRowsBetweenChart = nSkipRows * .Height
+      dColsBetweenChart = nSkipCols * .Width
+    End With
+
+    For iChart = EerstKaart To LstKaart
+
+      Set chtob = AnalyseSheet.ChartObjects(iChart)
+      Counter = Counter + 1
+      With chtob
+        .Left = ((Counter - 1) Mod nChartsPerRow) * _
+            (dWidth + dColsBetweenChart) + dFirstChartLeft
+        .Top = Int((Counter - 1) / nChartsPerRow) * _
+            (dHeight + dRowsBetweenChart) + dFirstChartTop
+        .Width = dWidth
+        .Height = dHeight
+      End With
+
+    Next
+
+  End If
+
+End Sub
