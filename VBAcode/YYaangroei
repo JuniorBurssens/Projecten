@@ -133,7 +133,17 @@ For c = 1 To UBound(Rekendata, 2)
     CijferBlad.Range(Cells(1, PlakCol + 1).Address) = Hoofding(1, c).Value
     For r = 1 To UBound(Rekendata, 1)
         CijferBlad.Range(Cells(r + 1, PlakCol).Address) = Aangroei(r, c)
+        If Application.International(xlDecimalSeparator) = "." Then 'Error catching, format is dependent on language settings
+            CijferBlad.Range(Cells(r + 1, PlakCol).Address).NumberFormatLocal = "#,##0.00"
+        Else
+            CijferBlad.Range(Cells(r + 1, PlakCol).Address).NumberFormatLocal = "#.##0,00"
+        End If
         CijferBlad.Range(Cells(r + 1, PlakCol + 1).Address) = Rekendata(r, c)
+        If Application.International(xlDecimalSeparator) = "." Then
+            CijferBlad.Range(Cells(r + 1, PlakCol + 1).Address).NumberFormatLocal = "#,##0"
+        Else
+            CijferBlad.Range(Cells(r + 1, PlakCol + 1).Address).NumberFormatLocal = "#.##0"
+        End If
     Next r
     PlakCol = PlakCol + 2
 Next c
@@ -153,6 +163,12 @@ If Not OptionGeen.Value Then
     GrafBlad.Range(Cells(1, 2), Cells(1, Hoofding.Count + 1)) = Hoofding.Value
     Set RekenRange = GrafBlad.Range(Cells(2, 2), Cells(1 + UBound(Rekendata, 1), 1 + UBound(Rekendata, 2)))
     RekenRange.Value = Rekendata
+    If Application.International(xlDecimalSeparator) = "." Then
+        RekenRange.NumberFormatLocal = "#,##0"
+    Else
+        RekenRange.NumberFormatLocal = "#.##0"
+    End If
+
     
     'Grafieken ruwe data
     EerstKaart = 1
@@ -172,7 +188,12 @@ If Not OptionGeen.Value Then
     Next c
     Set RekenRange = GrafBlad.Range(Cells(2, EerstKolom), Cells(1 + UBound(Aangroei, 1), EerstKolom + UBound(Aangroei, 2) - 1))
     RekenRange.Value = Aangroei
-    
+    If Application.International(xlDecimalSeparator) = "." Then
+        RekenRange.NumberFormatLocal = "#,##0.00"
+    Else
+        RekenRange.NumberFormatLocal = "#.##0,00"
+    End If
+
     'Grafieken berekende data
     EerstKaart = LstKaart + 1
     For Each x In RekenRange.Rows
@@ -194,7 +215,7 @@ BadRange:
     MsgBox "Ongeldig bereik gekozen. Kijk na of het gekozen bereik correct is."
     BereikenPerc.RefEdit1.SetFocus
 End Sub
-
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Sub MakeGridOfCharts(AnalyseSheet As Worksheet, EerstKaart As Long, LstKaart As Long, nRowsTall As Long, nColsWide As Long, nChartsPerRow As Long, nFirstRow As Long, nFirstCol As Long)
 'Adapted sub to pass variables from other sub
   ' Original code by Jon Peltier (3/19/2008, mod 10/03/2014)
